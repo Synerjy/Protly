@@ -4,6 +4,10 @@ Protly is a modern, responsive web dashboard built to visualize and analyze prot
 
 This project migrates the original Streamlit-based implementation into a robust architecture using a **FastAPI backend** and a **React + Vite frontend** with dynamic 3D molecular visualization.
 
+## Preview
+
+<img width="1920" height="1080" alt="Screenshot 2026-02-27 230522" src="https://github.com/user-attachments/assets/d633c3e9-add7-4aa9-adf4-f0f65675e958" />
+
 ## 🌟 Features
 *   **3D Molecular Viewer**: Rendering predicted protein structures in high fidelity using `3Dmol.js`.
 *   **Seamless ESMFold Integration**: Directly sends sequences to the ESMAtlas API and fetches the predicted `.pdb` structures and `pLDDT` B-factors.
