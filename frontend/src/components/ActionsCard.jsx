@@ -1,4 +1,19 @@
-export default function ActionsCard({ pdbData, onDownload, status }) {
+import { useCallback } from 'react';
+
+export default function ActionsCard({ pdbData, onDownload, status, sequence }) {
+    const handleDownloadFasta = useCallback(() => {
+        if (!sequence) return;
+        const header = `>predicted_protein|length=${sequence.length}\n`;
+        const wrapped = sequence.match(/.{1,80}/g)?.join('\n') || sequence;
+        const blob = new Blob([header + wrapped + '\n'], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'predicted.fasta';
+        a.click();
+        URL.revokeObjectURL(url);
+    }, [sequence]);
+
     return (
         <div className="card" id="actions-card">
             <div className="card__header">
@@ -19,19 +34,31 @@ export default function ActionsCard({ pdbData, onDownload, status }) {
                     Structure Export
                 </p>
                 <p className="actions-card__info">
-                    Download the predicted PDB file for use in molecular dynamics, visualization tools like PyMOL, or further analysis.
+                    Download the predicted structure or sequence for use in molecular dynamics, visualization tools like PyMOL, or further analysis.
                 </p>
 
-                <button
-                    id="download-pdb-btn"
-                    className="actions-card__main-btn"
-                    onClick={onDownload}
-                    disabled={!pdbData}
-                    style={{ marginTop: 'var(--space-md)' }}
-                >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-                    Download PDB
-                </button>
+                <div style={{ display: 'flex', gap: 'var(--space-sm)', marginTop: 'var(--space-md)' }}>
+                    <button
+                        id="download-pdb-btn"
+                        className="actions-card__main-btn"
+                        onClick={onDownload}
+                        disabled={!pdbData}
+                        style={{ flex: 1 }}
+                    >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                        PDB
+                    </button>
+                    <button
+                        id="download-fasta-btn"
+                        className="actions-card__main-btn actions-card__main-btn--secondary"
+                        onClick={handleDownloadFasta}
+                        disabled={!sequence || status !== 'complete'}
+                        style={{ flex: 1 }}
+                    >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                        FASTA
+                    </button>
+                </div>
 
                 {/* Decorative slider mimicking the 'Sleep Schedule' UI */}
                 <div className="actions-card__slider-row">

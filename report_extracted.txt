@@ -1,0 +1,270 @@
+--- PAGE 1 ---
+TEAM ANALYSIS REPORT
+Team T8
+Project: Protly
+
+On Track
+
+https://github.com/Synerjy/Protly
+March 03, 2026 • 05:06 PM IST
+
+Team Members: Rudraksh Mahajan, Jyotsana Bhardwaj, Siddhartha Khandelwal
+Problem Statement: Protly: Sequence-to-insight protein analysis dashboard
+
+I Analysis Scores
+
+Total Score
+50.0
+Fair
+
+Quality
+55.7
+Fair
+
+Security
+75.0
+Good
+
+Originality
+59.4
+Fair
+
+Architecture
+59.5
+Fair
+
+Documentation
+43.0
+Fair
+
+Effort
+59.5
+Fair
+
+Implementation
+44.6
+Fair
+
+I Code Metrics
+
+Metric
+Value
+
+Total Files
+3
+
+Lines of Code
+14,686
+
+Languages
+CSS: 30.9%, HTML: 1.2%, Python: 10.8%, JavaScript: 57.1%
+
+Frameworks
+Biotite, Vite, Requests, Numpy, Python, Uvicorn, 3Dmol.js, React, Node.js, FastAPI, Chart.js
+
+Architecture
+Monolithic / Unstructured
+
+Engineering Maturity: I No tests
+
+I Contributors
+
+Total Commits: 7
+
+Contributor
+Commits
+Lines Changed
+Share
+
+raiden9420
+1
++7274/-0
+14.3%
+
+Rudraksh Mahajan
+2
++69/-0
+28.6%
+
+Siddhartha Khandelwal
+4
++7343/-0
+57.1%
+
+I AI Analysis & Feedback
+
+AI-Generated Content: 0.0% I Verdict: MVP
+
+I Features Implemented:
+
+• 3D Molecular Viewer
+• Seamless ESMFold Integration
+
+
+--- PAGE 2 ---
+• Confidence Metrics Visualization
+• Health Check API Endpoint
+• Prediction of Protein Structure
+• Downloadable PDB Files
+
+I Positive Feedback:
+
+The project exhibits a strong understanding of modern web technologies with a clean separation between
+frontend and backend. The integration with ESMFold demonstrates innovative thinking and application of
+cutting-edge science. The UI is responsive and user-friendly, making it accessible for a variety of users.
+
+II Areas for Improvement:
+
+While the core functionality is solid, additional features like user authentication and error logging would greatly
+enhance the overall robustness of the application. Further UI polishing and documentation improvements
+could also help in making the product more user-friendly.
+
+I Feature-by-Feature Analysis
+
+3D Molecular Viewer — Fully Implemented I Quality: Good
+
+I Successfully renders protein structures in 3D using user-provided PDB data.
+I Add options for different visualization styles.
+
+Seamless ESMFold Integration — Fully Implemented I Quality: Good
+
+I Fetches protein structure predictions from the ESMAtlas API and displays results.
+I Enhance error messaging when API calls fail.
+
+Confidence Metrics Visualization — Fully Implemented I Quality: Good
+
+I Displays per-residue confidence metrics using charts.
+I Include tooltips for detailed residue information.
+
+Downloadable PDB Files — Fully Implemented I Quality: Good
+
+I Allows users to download predicted PDB files for further analysis.
+I Add file format options for downloads.
+
+User Input for Amino Acid Sequences — Fully Implemented I Quality: Good
+
+I Input field accepts sequences and triggers predictions.
+I Implement a sequence validation mechanism before submission.
+
+I Product Analysis
+
+Value Proposition: Protly simplifies and accelerates protein structure prediction for researchers and educators.
+
+Target Users: Biochemists, molecular biologists, and students interested in protein structure analysis.
+
+Competitive Advantage: Combines user-friendly visualization with robust backend processing, leveraging
+ESMFold's capabilities.
+
+Market Readiness: Beta Ready
+
+I Suggested New Features
+
+1. User Authentication — Priority: High
+
+Why: To allow user-specific data storage and personalized experiences.
+
+How: Implement JWT-based authentication in FastAPI.
+
+
+--- PAGE 3 ---
+2. Visualization Customization Options — Priority: Medium
+
+Why: To enhance user experience by allowing personalized visualization settings.
+
+How: Add UI controls to adjust visualization parameters in MolViewer.
+
+3. Batch Processing of Sequences — Priority: High
+
+Why: To allow users to process multiple sequences in one go, saving time.
+
+How: Modify the API to accept an array of sequences for batch predictions.
+
+4. Detailed Error Logging — Priority: Medium
+
+Why: To enhance debugging and user support by tracking errors.
+
+How: Integrate logging middleware in FastAPI.
+
+I Overall Recommendation
+
+Focus on addressing the highlighted improvements and consider user feedback for future iterations. Expanding
+the feature set based on user needs will significantly enhance the product's value.
+
+I Security Analysis
+
+Security Score: 75.0/100 (Secrets: 100.0, Practices: 39.0) I Secrets Detected: 0
+
+I Security Best Practices:
+
+ Rate Limiting
+
+ Authentication
+
+ Authorization
+
+ Input Validation
+
+ CORS Configuration
+
+ Security Headers
+
+ SQL Injection Prevention
+
+ XSS Prevention
+
+ CSRF Protection
+
+ Password Hashing
+
+I Security Recommendations:
+
+1. Implement Authentication [Priority: 9/10]
+
+Authentication is not implemented in this codebase. Add user login/authentication so only authorized users can access your
+app
+2. Implement Authorization [Priority: 9/10]
+
+Authorization is not implemented in this codebase. Check user permissions before allowing actions (e.g., only admins can
+delete data)
+3. Implement SQL Injection Prevention [Priority: 9/10]
+
+SQL Injection Prevention is not implemented in this codebase. Use safe database queries to prevent SQL injection attacks
+(hackers can't steal your data)
+4. Implement Password Hashing [Priority: 9/10]
+
+Password Hashing is not implemented in this codebase. Hash passwords before storing them (never store plain text
+passwords!)
+5. Implement Rate Limiting [Priority: 7/10]
+
+
+--- PAGE 4 ---
+Rate Limiting is not implemented in this codebase. Add rate limiting to prevent people from spamming your API with too many
+requests
+… and 5 more
+I No security issues detected.
+
+II Files Requiring Review
+
+Files flagged for potential AI generation or similarity issues:
+
+File
+AI %
+Risk Level
+
+eslint.config.js
+41%
+Low
+
+Sidebar.jsx
+34%
+Low
+
+GeneInfo.jsx
+27%
+Low
+
+Last Analysis: March 02, 2026 • 12:12 PM IST
+
+Generated by ProjectFlow — GitHub Analysis System
+
+

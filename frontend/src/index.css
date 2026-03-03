@@ -567,6 +567,49 @@ textarea {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
+.mol-viewer__style-bar {
+  position: absolute;
+  bottom: var(--space-md);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+  border-radius: var(--radius-full);
+  padding: 3px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.mol-viewer__style-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.mol-viewer__style-btn:hover {
+  background: var(--bg);
+  color: var(--text-primary);
+}
+
+.mol-viewer__style-btn--active {
+  background: var(--navy);
+  color: white;
+}
+
+.mol-viewer__style-btn--active:hover {
+  background: var(--navy-light);
+  color: white;
+}
+
 .mol-viewer__placeholder {
   display: flex;
   flex-direction: column;
@@ -960,6 +1003,18 @@ textarea {
 .actions-card__main-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.actions-card__main-btn--secondary {
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+}
+
+.actions-card__main-btn--secondary:hover:not(:disabled) {
+  background: var(--accent-glow);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(74, 108, 247, 0.15);
 }
 
 .actions-card__info {
