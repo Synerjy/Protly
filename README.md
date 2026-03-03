@@ -9,15 +9,50 @@ This project migrates the original Streamlit-based implementation into a robust 
 <img width="1920" height="1080" alt="Screenshot 2026-02-27 230522" src="https://github.com/user-attachments/assets/d633c3e9-add7-4aa9-adf4-f0f65675e958" />
 
 ## 🌟 Features
-*   **3D Molecular Viewer**: Rendering predicted protein structures in high fidelity using `3Dmol.js`.
+*   **3D Molecular Viewer**: Rendering predicted protein structures in high fidelity using `3Dmol.js`, with switchable visualization styles (Cartoon, Stick, Sphere, Surface).
 *   **Seamless ESMFold Integration**: Directly sends sequences to the ESMAtlas API and fetches the predicted `.pdb` structures and `pLDDT` B-factors.
-*   **Confidence Metrics**: Interactive gauges and a per-residue sparkline chart that visualizes High, Confident, and Low `pLDDT` regions.
-*   **FastAPI Backend**: A lightweight Python REST API proxying requests to ESMAtlas and processing the resulting PDB files into detailed metrics.
-*   **Modern React UI**: A custom CSS dashboard featuring a responsive layout and beautiful typography (Inter), fully replacing the Streamlit constraints.
+*   **Confidence Metrics**: Interactive gauges and a per-residue sparkline chart with detailed residue tooltips showing amino acid letters and confidence classifications.
+*   **Sequence Validation**: Real-time validation of amino acid sequences with clear feedback for invalid characters.
+*   **Multi-Format Export**: Download predicted structures as PDB files or sequences in FASTA format.
+*   **FastAPI Backend**: A lightweight Python REST API with rate limiting, structured logging, and security headers.
+*   **Modern React UI**: A custom CSS dashboard featuring a responsive layout and beautiful typography (Inter).
+
+## 📁 Project Structure
+```
+Protly/
+├── backend/
+│   ├── main.py              # FastAPI server — endpoints, validation, middleware
+│   └── requirements.txt     # Python dependencies
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx           # Root component — state management & layout
+│   │   ├── main.jsx          # React entry point
+│   │   ├── index.css         # Design system & all styles
+│   │   └── components/
+│   │       ├── MolViewer.jsx        # 3D protein viewer (3Dmol.js)
+│   │       ├── SequenceInput.jsx    # Sequence input with validation
+│   │       ├── PldtMetrics.jsx      # pLDDT score chart
+│   │       ├── ConfidenceBar.jsx    # Circular confidence gauges
+│   │       ├── ProteinMetrics.jsx   # Protein analytics summary
+│   │       ├── ActionsCard.jsx      # PDB & FASTA export
+│   │       ├── PredictionStatus.jsx # Status badge
+│   │       ├── GeneInfo.jsx         # Gene & organism tracking
+│   │       ├── Sidebar.jsx          # Navigation sidebar
+│   │       └── TopBar.jsx           # Top navigation bar
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.js
+└── README.md
+```
 
 ## 🏗️ Architecture
-*   **Frontend (/frontend)**: React 18, Vite, Chart.js, 3dmol.js
-*   **Backend (/backend)**: FastAPI, Uvicorn, Requests, Biotite, Numpy
+*   **Frontend**: React 18, Vite, Chart.js, 3Dmol.js
+*   **Backend**: FastAPI, Uvicorn, Requests, Biotite, NumPy, SlowAPI
+
+## ⚙️ Prerequisites
+*   **Python** 3.10+
+*   **Node.js** 18+ and **npm**
+*   Internet connection (for ESMAtlas API calls)
 
 ## 🚀 Getting Started
 
@@ -55,9 +90,56 @@ Paste your amino acid sequence into the **Sequence Entry Center** and hit **Pred
 
 *(Note: The prediction can take up to 2 minutes depending on the sequence length and ESMAtlas server load.)*
 
+## 📡 API Reference
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/health` | Health check — returns `{ "status": "ok" }` |
+| `POST` | `/api/predict` | Predict protein structure from an amino acid sequence |
+
+### `POST /api/predict`
+
+**Request body** (JSON):
+```json
+{
+  "sequence": "MGSSHHHHH..."   // 10–2000 chars, standard amino acids only
+}
+```
+
+**Response** (JSON):
+```json
+{
+  "pdb": "...",                // Full PDB file contents
+  "plddt": {
+    "mean": 82.5,
+    "per_residue": [90.1, 85.3, ...],
+    "very_high": 45.2,
+    "confident": 30.1,
+    "low": 15.0,
+    "very_low": 9.7
+  },
+  "sequence_length": 270
+}
+```
+
+**Rate limit**: 10 requests per minute per IP.
+
 ## 📥 Exporting
-Once the structure is predicted, you can click **Download PDB** to save the `.pdb` file locally for further analysis in tools like PyMOL or ChimeraX.
+Once the structure is predicted, you can:
+- Click **PDB** to download the `.pdb` file for tools like PyMOL or ChimeraX
+- Click **FASTA** to download the sequence in FASTA format
+
+## 🤝 Contributing
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/my-feature`)
+3. Commit your changes (`git commit -m 'Add feature'`)
+4. Push to the branch (`git push origin feature/my-feature`)
+5. Open a Pull Request
 
 ## 📜 Credits
 *   Inspired by the original Streamlit ESMFold app by Chanin Nantasenamat.
 *   Powered by the Meta [ESM-2 language model](https://ai.facebook.com/blog/protein-folding-esmfold-metagenomics/).
+
+## 📄 License
+This project is for educational and research purposes. See the repository for license details.
+

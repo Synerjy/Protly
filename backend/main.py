@@ -7,18 +7,42 @@ Endpoints:
 """
 
 import io
+import re
+import time
+import logging
 import tempfile
 import os
 import traceback
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from fastapi.responses import Response
+from pydantic import BaseModel, Field, field_validator
 import requests
 import numpy as np
 import biotite.structure.io as bsio
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+# ---------------------------------------------------------------------------
+# Logging setup
+# ---------------------------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)-7s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger("protly")
+
+# ---------------------------------------------------------------------------
+# Rate limiter
+# ---------------------------------------------------------------------------
+limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(title="Protly API", version="1.0.0")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ---------------------------------------------------------------------------
 # CORS — allow the Vite dev server and common local origins
@@ -32,11 +56,54 @@ app.add_middleware(
 )
 
 # ---------------------------------------------------------------------------
+# Security headers middleware
+# ---------------------------------------------------------------------------
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+# ---------------------------------------------------------------------------
+# Request logging middleware
+# ---------------------------------------------------------------------------
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.time()
+    logger.info("→ %s %s", request.method, request.url.path)
+    try:
+        response = await call_next(request)
+        elapsed = (time.time() - start) * 1000
+        logger.info("← %s %s  %d  %.0fms", request.method, request.url.path, response.status_code, elapsed)
+        return response
+    except Exception as exc:
+        elapsed = (time.time() - start) * 1000
+        logger.error("✖ %s %s  ERROR  %.0fms — %s", request.method, request.url.path, elapsed, exc)
+        raise
+
+# ---------------------------------------------------------------------------
 # Models
 # ---------------------------------------------------------------------------
+VALID_AMINO_ACIDS = set("ACDEFGHIKLMNPQRSTVWY")
 
 class PredictRequest(BaseModel):
     sequence: str = Field(..., min_length=10, max_length=2000, description="Amino-acid sequence (single letter codes)")
+
+    @field_validator("sequence")
+    @classmethod
+    def validate_amino_acids(cls, v: str) -> str:
+        """Strip whitespace/digits, uppercase, then reject invalid amino-acid letters."""
+        cleaned = re.sub(r"[\s\d]", "", v).upper()
+        invalid = set(cleaned) - VALID_AMINO_ACIDS
+        if invalid:
+            raise ValueError(
+                f"Sequence contains invalid characters: {', '.join(sorted(invalid))}. "
+                f"Only standard amino-acid letters are allowed: {''.join(sorted(VALID_AMINO_ACIDS))}"
+            )
+        return cleaned
 
 
 class PlddtData(BaseModel):
@@ -64,10 +131,11 @@ async def health():
 
 
 @app.post("/api/predict", response_model=PredictResponse)
-async def predict(body: PredictRequest):
+@limiter.limit("10/minute")
+async def predict(request: Request, body: PredictRequest):
     """Call the ESMAtlas fold API and return the PDB string + pLDDT statistics."""
 
-    sequence = body.sequence.strip().upper()
+    sequence = body.sequence  # already cleaned by validator
 
     # ---- call ESMAtlas ----
     try:
@@ -79,7 +147,11 @@ async def predict(body: PredictRequest):
         )
         resp.raise_for_status()
     except requests.RequestException as exc:
-        raise HTTPException(status_code=502, detail=f"ESMAtlas API error: {exc}")
+        logger.error("ESMAtlas API call failed: %s", exc)
+        raise HTTPException(
+            status_code=502,
+            detail=f"The protein structure prediction service (ESMAtlas) is currently unavailable. Please try again later. ({type(exc).__name__})"
+        )
 
     pdb_string = resp.text
 
@@ -121,8 +193,8 @@ async def predict(body: PredictRequest):
         os.unlink(tmp.name)
 
     except Exception as exc:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"PDB parsing error: {exc}")
+        logger.error("PDB parsing failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to parse the predicted structure. Please try a different sequence. ({type(exc).__name__})")
 
     return PredictResponse(
         pdb=pdb_string,

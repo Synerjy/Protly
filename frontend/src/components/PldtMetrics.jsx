@@ -12,7 +12,7 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip);
 
-export default function PldtMetrics({ plddtData }) {
+export default function PldtMetrics({ plddtData, sequence }) {
     const mean = plddtData?.mean ?? null;
     const perResidue = plddtData?.per_residue ?? [];
 
@@ -46,7 +46,16 @@ export default function PldtMetrics({ plddtData }) {
         plugins: {
             tooltip: {
                 callbacks: {
-                    label: (ctx) => `pLDDT: ${ctx.parsed.y.toFixed(1)}`,
+                    label: (ctx) => {
+                        const val = ctx.parsed.y;
+                        const residueIdx = parseInt(ctx.label) - 1;
+                        const aa = sequence?.[residueIdx] || '';
+                        const conf = val > 90 ? 'Very High' : val > 70 ? 'Confident' : val > 50 ? 'Low' : 'Very Low';
+                        return [
+                            `pLDDT: ${val.toFixed(1)} (${conf})`,
+                            aa ? `Amino Acid: ${aa}` : '',
+                        ].filter(Boolean);
+                    },
                     title: (items) => `Residue ${items[0]?.label}`,
                 },
             },

@@ -1,8 +1,38 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+
+const VIZ_STYLES = [
+    { key: 'cartoon', label: 'Cartoon', icon: '🎨' },
+    { key: 'stick', label: 'Stick', icon: '⊥' },
+    { key: 'sphere', label: 'Sphere', icon: '●' },
+    { key: 'surface', label: 'Surface', icon: '◐' },
+];
 
 export default function MolViewer({ pdbData, status }) {
     const containerRef = useRef(null);
     const viewerRef = useRef(null);
+    const [vizStyle, setVizStyle] = useState('cartoon');
+
+    const applyStyle = useCallback((style) => {
+        const viewer = viewerRef.current;
+        if (!viewer) return;
+        const styleMap = {
+            cartoon: { cartoon: { color: 'spectrum' } },
+            stick: { stick: { colorscheme: 'Jmol' } },
+            sphere: { sphere: { colorscheme: 'Jmol', scale: 0.3 } },
+            surface: { cartoon: { color: 'spectrum', opacity: 0.5 } },
+        };
+        viewer.setStyle({}, styleMap[style] || styleMap.cartoon);
+        if (style === 'surface') {
+            viewer.addSurface(window.$3Dmol?.SurfaceType?.VDW ?? 1, {
+                opacity: 0.7,
+                color: 'white',
+                colorscheme: { prop: 'b', gradient: 'rwb', min: 0, max: 100 },
+            });
+        } else {
+            viewer.removeAllSurfaces();
+        }
+        viewer.render();
+    }, []);
 
     useEffect(() => {
         // Only initialize once we have data and 3Dmol is available
@@ -32,6 +62,7 @@ export default function MolViewer({ pdbData, status }) {
             viewer.render();
 
             viewerRef.current = viewer;
+            setVizStyle('cartoon');
         });
 
         return () => {
@@ -76,6 +107,23 @@ export default function MolViewer({ pdbData, status }) {
                         ref={containerRef}
                         style={{ width: '100%', height: '100%' }}
                     />
+                    {/* Visualization style selector */}
+                    <div className="mol-viewer__style-bar">
+                        {VIZ_STYLES.map((s) => (
+                            <button
+                                key={s.key}
+                                className={`mol-viewer__style-btn${vizStyle === s.key ? ' mol-viewer__style-btn--active' : ''}`}
+                                title={s.label}
+                                onClick={() => {
+                                    setVizStyle(s.key);
+                                    applyStyle(s.key);
+                                }}
+                            >
+                                <span style={{ fontSize: 14 }}>{s.icon}</span>
+                                <span style={{ fontSize: 11 }}>{s.label}</span>
+                            </button>
+                        ))}
+                    </div>
                     <div className="mol-viewer__overlay-controls">
                         <button
                             className="mol-viewer__overlay-btn"

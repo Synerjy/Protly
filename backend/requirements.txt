@@ -3,3 +3,4 @@ uvicorn[standard]
 requests
 biotite
 numpy
+slowapi

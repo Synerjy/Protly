@@ -128,7 +128,7 @@ export default function App() {
               status={status}
             />
 
-            <PldtMetrics plddtData={plddtData} />
+            <PldtMetrics plddtData={plddtData} sequence={sequence} />
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-lg)' }}>
               <ProteinMetrics plddtData={plddtData} seqLength={seqLength} />
@@ -139,6 +139,7 @@ export default function App() {
               pdbData={pdbData}
               onDownload={handleDownload}
               status={status}
+              sequence={sequence}
             />
           </div>
         </div>
