@@ -121,6 +121,33 @@ class PredictResponse(BaseModel):
     sequence_length: int
 
 
+class SolubilityRequest(BaseModel):
+    sequence: str = Field(..., min_length=10, max_length=2000, description="Amino-acid sequence (single letter codes)")
+
+    @field_validator("sequence")
+    @classmethod
+    def validate_amino_acids(cls, v: str) -> str:
+        """Strip whitespace/digits, uppercase, then reject invalid amino-acid letters."""
+        cleaned = re.sub(r"[\s\d]", "", v).upper()
+        invalid = set(cleaned) - VALID_AMINO_ACIDS
+        if invalid:
+            raise ValueError(
+                f"Sequence contains invalid characters: {', '.join(sorted(invalid))}. "
+                f"Only standard amino-acid letters are allowed: {''.join(sorted(VALID_AMINO_ACIDS))}"
+            )
+        return cleaned
+
+
+class SolubilityResponse(BaseModel):
+    sequence_length: int
+    solubility_score: float  # 0-100, higher = more soluble
+    solubility_class: str    # "High", "Moderate", "Low"
+    hydrophobicity: float    # average hydrophobicity score
+    charge_ratio: float      # ratio of charged residues
+    prediction_confidence: float
+    details: dict
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
@@ -208,6 +235,128 @@ async def predict(request: Request, body: PredictRequest):
         ),
         sequence_length=len(sequence),
     )
+
+
+@app.post("/api/solubility", response_model=SolubilityResponse)
+@limiter.limit("20/minute")
+async def measure_solubility(request: Request, body: SolubilityRequest):
+    """
+    Measure and predict protein solubility from amino acid sequence.
+    Returns dummy/mock data for demonstration purposes.
+    """
+    sequence = body.sequence  # already cleaned by validator
+
+    # ---- Hydrophobicity scale (Kyte-Doolittle) ----
+    hydro_scale = {
+        'A': 1.8, 'R': -4.5, 'N': -3.5, 'D': -3.5, 'C': 2.5,
+        'Q': -3.5, 'E': -3.5, 'G': -0.4, 'H': -3.2, 'I': 4.5,
+        'L': 3.8, 'K': -3.9, 'M': 1.9, 'F': 2.8, 'P': -1.6,
+        'S': -0.8, 'T': -0.7, 'W': -0.9, 'Y': -1.3, 'V': 4.2
+    }
+
+    # ---- Calculate features ----
+    seq_length = len(sequence)
+    
+    # Average hydrophobicity
+    hydro_sum = sum(hydro_scale.get(aa, 0) for aa in sequence)
+    hydrophobicity = hydro_sum / seq_length if seq_length > 0 else 0
+
+    # Count charged residues (positive: K, R; negative: D, E)
+    positive = sum(1 for aa in sequence if aa in 'KR')
+    negative = sum(1 for aa in sequence if aa in 'DE')
+    total_charged = positive + negative
+    charge_ratio = total_charged / seq_length if seq_length > 0 else 0
+
+    # ---- Dummy solubility prediction ----
+    # Combine features to get a solubility score (0-100)
+    # Higher charge ratio and lower hydrophobicity generally = more soluble
+    base_score = 50
+    
+    # Adjust for hydrophobicity (very hydrophobic proteins are less soluble)
+    if hydrophobicity > 2:
+        base_score -= 20
+    elif hydrophobicity > 1:
+        base_score -= 10
+    elif hydrophobicity < -1:
+        base_score += 15
+    
+    # Adjust for charge (more charged = more soluble)
+    if charge_ratio > 0.3:
+        base_score += 20
+    elif charge_ratio > 0.15:
+        base_score += 10
+    
+    # Add some randomness for demonstration
+    solubility_score = min(100, max(0, base_score + np.random.uniform(-5, 5)))
+    
+    # Classify solubility
+    if solubility_score >= 65:
+        solubility_class = "High"
+    elif solubility_score >= 45:
+        solubility_class = "Moderate"
+    else:
+        solubility_class = "Low"
+
+    prediction_confidence = round(0.75 + np.random.uniform(-0.1, 0.15), 2)
+
+    return SolubilityResponse(
+        sequence_length=seq_length,
+        solubility_score=round(solubility_score, 2),
+        solubility_class=solubility_class,
+        hydrophobicity=round(hydrophobicity, 3),
+        charge_ratio=round(charge_ratio, 3),
+        prediction_confidence=prediction_confidence,
+        details={
+            "positive_residues": positive,
+            "negative_residues": negative,
+            "total_charged": total_charged,
+            "hydrophobic_residues": sum(1 for aa in sequence if aa in 'AILMFVP'),
+            "note": "Dummy prediction for demonstration. In production, this would use ML models."
+        }
+    )
+
+
+@app.get("/api/solubility/search")
+@limiter.limit("20/minute")
+async def search_solubility(protein_name: str = "", min_score: float = 0, max_score: float = 100):
+    """
+    Search protein solubility database.
+    Returns dummy data matching the search criteria.
+    """
+    if min_score < 0 or min_score > 100 or max_score < 0 or max_score > 100:
+        raise HTTPException(status_code=400, detail="Scores must be between 0 and 100")
+    
+    if min_score > max_score:
+        raise HTTPException(status_code=400, detail="min_score must be less than or equal to max_score")
+
+    # ---- Dummy database ----
+    dummy_proteins = [
+        {"name": "Ubiquitin", "solubility_score": 82.5, "class": "High"},
+        {"name": "insulin", "solubility_score": 45.3, "class": "Moderate"},
+        {"name": "Lysozyme", "solubility_score": 78.9, "class": "High"},
+        {"name": "Hemoglobin", "solubility_score": 55.2, "class": "Moderate"},
+        {"name": "Myoglobin", "solubility_score": 72.1, "class": "High"},
+        {"name": "Collagen", "solubility_score": 28.4, "class": "Low"},
+        {"name": "Amylase", "solubility_score": 85.7, "class": "High"},
+        {"name": "Protease", "solubility_score": 61.3, "class": "Moderate"},
+    ]
+
+    # Filter by name and score range
+    results = [
+        p for p in dummy_proteins
+        if (protein_name.lower() in p["name"].lower() and
+            min_score <= p["solubility_score"] <= max_score)
+    ]
+
+    return {
+        "query": {
+            "protein_name": protein_name,
+            "min_score": min_score,
+            "max_score": max_score
+        },
+        "count": len(results),
+        "results": results
+    }
 
 
 if __name__ == "__main__":
