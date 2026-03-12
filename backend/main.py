@@ -24,6 +24,10 @@ import biotite.structure.io as bsio
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+try:
+    from .stability import compute_stability_metrics
+except ImportError:
+    from stability import compute_stability_metrics
 
 # ---------------------------------------------------------------------------
 # Logging setup
@@ -351,69 +355,16 @@ async def measure_solubility(request: Request, body: SolubilityRequest):
 @app.post("/api/stability", response_model=StabilityResponse)
 @limiter.limit("20/minute")
 async def measure_stability(request: Request, body: StabilityRequest):
-    """
-    Estimate protein stability from sequence-derived biochemical features.
-    This is a deterministic heuristic model suitable for MVP-level screening.
-    """
+    """Estimate protein stability from sequence-derived biochemical features."""
     sequence = body.sequence  # already cleaned by validator
-    seq_length = len(sequence)
 
-    # Feature 1: aromaticity (F, W, Y)
-    aromatic_count = sum(1 for aa in sequence if aa in "FWY")
-    aromaticity = aromatic_count / seq_length if seq_length > 0 else 0
+    try:
+        metrics = compute_stability_metrics(sequence)
+    except Exception as exc:
+        logger.error("Stability computation failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail="Stability computation failed. Please try again.")
 
-    # Feature 2: aliphatic index approximation (A, V, I, L)
-    a_count = sequence.count("A")
-    v_count = sequence.count("V")
-    i_count = sequence.count("I")
-    l_count = sequence.count("L")
-    aliphatic_index = ((a_count + 2.9 * v_count + 3.9 * (i_count + l_count)) / seq_length * 100) if seq_length > 0 else 0
-
-    # Feature 3: charge density (K, R, H, D, E)
-    positive = sum(1 for aa in sequence if aa in "KRH")
-    negative = sum(1 for aa in sequence if aa in "DE")
-    charge_density = (positive + negative) / seq_length if seq_length > 0 else 0
-
-    # Feature 4: disorder-promoting residue fraction (proxy for instability)
-    disorder_count = sum(1 for aa in sequence if aa in "PGSQEN")
-    disorder_fraction = disorder_count / seq_length if seq_length > 0 else 0
-
-    # Approximate instability index (higher means less stable)
-    instability_index = (
-        50
-        + (disorder_fraction * 70)
-        - (aromaticity * 20)
-        - (aliphatic_index * 0.12)
-        + (max(charge_density - 0.25, 0) * 25)
-    )
-    instability_index = float(max(5, min(95, instability_index)))
-
-    # Stability score is inverse of instability index
-    stability_score = round(100 - instability_index, 2)
-
-    if stability_score >= 65:
-        stability_class = "High"
-    elif stability_score >= 45:
-        stability_class = "Moderate"
-    else:
-        stability_class = "Low"
-
-    return StabilityResponse(
-        sequence_length=seq_length,
-        instability_index=round(instability_index, 2),
-        stability_score=stability_score,
-        stability_class=stability_class,
-        aromaticity=round(aromaticity, 3),
-        aliphatic_index=round(aliphatic_index, 2),
-        charge_density=round(charge_density, 3),
-        details={
-            "aromatic_residues": aromatic_count,
-            "disorder_promoting_residues": disorder_count,
-            "positively_charged_residues": positive,
-            "negatively_charged_residues": negative,
-            "model": "Deterministic heuristic model for MVP stability screening"
-        },
-    )
+    return StabilityResponse(**metrics)
 
 
 @app.get("/api/solubility/search")
