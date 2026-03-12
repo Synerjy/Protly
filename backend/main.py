@@ -24,6 +24,10 @@ import biotite.structure.io as bsio
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+try:
+    from .stability import compute_stability_metrics
+except ImportError:
+    from stability import compute_stability_metrics
 
 # ---------------------------------------------------------------------------
 # Logging setup
@@ -97,6 +101,8 @@ class PredictRequest(BaseModel):
     def validate_amino_acids(cls, v: str) -> str:
         """Strip whitespace/digits, uppercase, then reject invalid amino-acid letters."""
         cleaned = re.sub(r"[\s\d]", "", v).upper()
+        if not 10 <= len(cleaned) <= 2000:
+            raise ValueError("Sequence length must be between 10 and 2000 amino acids after cleaning")
         invalid = set(cleaned) - VALID_AMINO_ACIDS
         if invalid:
             raise ValueError(
@@ -145,6 +151,36 @@ class SolubilityResponse(BaseModel):
     hydrophobicity: float    # average hydrophobicity score
     charge_ratio: float      # ratio of charged residues
     prediction_confidence: float
+    details: dict
+
+
+class StabilityRequest(BaseModel):
+    sequence: str = Field(..., description="Amino-acid sequence (single letter codes)")
+
+    @field_validator("sequence")
+    @classmethod
+    def validate_amino_acids(cls, v: str) -> str:
+        """Strip whitespace/digits, uppercase, then reject invalid amino-acid letters."""
+        cleaned = re.sub(r"[\s\d]", "", v).upper()
+        if not 10 <= len(cleaned) <= 2000:
+            raise ValueError("Sequence length must be between 10 and 2000 amino acids after cleaning")
+        invalid = set(cleaned) - VALID_AMINO_ACIDS
+        if invalid:
+            raise ValueError(
+                f"Sequence contains invalid characters: {', '.join(sorted(invalid))}. "
+                f"Only standard amino-acid letters are allowed: {''.join(sorted(VALID_AMINO_ACIDS))}"
+            )
+        return cleaned
+
+
+class StabilityResponse(BaseModel):
+    sequence_length: int
+    instability_index: float
+    stability_score: float  # 0-100, higher = more stable
+    stability_class: str    # "High", "Moderate", "Low"
+    aromaticity: float
+    aliphatic_index: float
+    charge_density: float
     details: dict
 
 
@@ -316,9 +352,24 @@ async def measure_solubility(request: Request, body: SolubilityRequest):
     )
 
 
+@app.post("/api/stability", response_model=StabilityResponse)
+@limiter.limit("20/minute")
+async def measure_stability(request: Request, body: StabilityRequest):
+    """Estimate protein stability from sequence-derived biochemical features."""
+    sequence = body.sequence  # already cleaned by validator
+
+    try:
+        metrics = compute_stability_metrics(sequence)
+    except Exception as exc:
+        logger.error("Stability computation failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail="Stability computation failed. Please try again.")
+
+    return StabilityResponse(**metrics)
+
+
 @app.get("/api/solubility/search")
 @limiter.limit("20/minute")
-async def search_solubility(protein_name: str = "", min_score: float = 0, max_score: float = 100):
+async def search_solubility(request: Request, protein_name: str = "", min_score: float = 0, max_score: float = 100):
     """
     Search protein solubility database.
     Returns dummy data matching the search criteria.
