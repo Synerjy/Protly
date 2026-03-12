@@ -155,7 +155,7 @@ class SolubilityResponse(BaseModel):
 
 
 class StabilityRequest(BaseModel):
-    sequence: str = Field(..., min_length=10, max_length=2000, description="Amino-acid sequence (single letter codes)")
+    sequence: str = Field(..., description="Amino-acid sequence (single letter codes)")
 
     @field_validator("sequence")
     @classmethod
