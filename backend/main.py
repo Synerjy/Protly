@@ -97,6 +97,8 @@ class PredictRequest(BaseModel):
     def validate_amino_acids(cls, v: str) -> str:
         """Strip whitespace/digits, uppercase, then reject invalid amino-acid letters."""
         cleaned = re.sub(r"[\s\d]", "", v).upper()
+        if not 10 <= len(cleaned) <= 2000:
+            raise ValueError("Sequence length must be between 10 and 2000 amino acids after cleaning")
         invalid = set(cleaned) - VALID_AMINO_ACIDS
         if invalid:
             raise ValueError(
@@ -145,6 +147,36 @@ class SolubilityResponse(BaseModel):
     hydrophobicity: float    # average hydrophobicity score
     charge_ratio: float      # ratio of charged residues
     prediction_confidence: float
+    details: dict
+
+
+class StabilityRequest(BaseModel):
+    sequence: str = Field(..., min_length=10, max_length=2000, description="Amino-acid sequence (single letter codes)")
+
+    @field_validator("sequence")
+    @classmethod
+    def validate_amino_acids(cls, v: str) -> str:
+        """Strip whitespace/digits, uppercase, then reject invalid amino-acid letters."""
+        cleaned = re.sub(r"[\s\d]", "", v).upper()
+        if not 10 <= len(cleaned) <= 2000:
+            raise ValueError("Sequence length must be between 10 and 2000 amino acids after cleaning")
+        invalid = set(cleaned) - VALID_AMINO_ACIDS
+        if invalid:
+            raise ValueError(
+                f"Sequence contains invalid characters: {', '.join(sorted(invalid))}. "
+                f"Only standard amino-acid letters are allowed: {''.join(sorted(VALID_AMINO_ACIDS))}"
+            )
+        return cleaned
+
+
+class StabilityResponse(BaseModel):
+    sequence_length: int
+    instability_index: float
+    stability_score: float  # 0-100, higher = more stable
+    stability_class: str    # "High", "Moderate", "Low"
+    aromaticity: float
+    aliphatic_index: float
+    charge_density: float
     details: dict
 
 
@@ -316,9 +348,77 @@ async def measure_solubility(request: Request, body: SolubilityRequest):
     )
 
 
+@app.post("/api/stability", response_model=StabilityResponse)
+@limiter.limit("20/minute")
+async def measure_stability(request: Request, body: StabilityRequest):
+    """
+    Estimate protein stability from sequence-derived biochemical features.
+    This is a deterministic heuristic model suitable for MVP-level screening.
+    """
+    sequence = body.sequence  # already cleaned by validator
+    seq_length = len(sequence)
+
+    # Feature 1: aromaticity (F, W, Y)
+    aromatic_count = sum(1 for aa in sequence if aa in "FWY")
+    aromaticity = aromatic_count / seq_length if seq_length > 0 else 0
+
+    # Feature 2: aliphatic index approximation (A, V, I, L)
+    a_count = sequence.count("A")
+    v_count = sequence.count("V")
+    i_count = sequence.count("I")
+    l_count = sequence.count("L")
+    aliphatic_index = ((a_count + 2.9 * v_count + 3.9 * (i_count + l_count)) / seq_length * 100) if seq_length > 0 else 0
+
+    # Feature 3: charge density (K, R, H, D, E)
+    positive = sum(1 for aa in sequence if aa in "KRH")
+    negative = sum(1 for aa in sequence if aa in "DE")
+    charge_density = (positive + negative) / seq_length if seq_length > 0 else 0
+
+    # Feature 4: disorder-promoting residue fraction (proxy for instability)
+    disorder_count = sum(1 for aa in sequence if aa in "PGSQEN")
+    disorder_fraction = disorder_count / seq_length if seq_length > 0 else 0
+
+    # Approximate instability index (higher means less stable)
+    instability_index = (
+        50
+        + (disorder_fraction * 70)
+        - (aromaticity * 20)
+        - (aliphatic_index * 0.12)
+        + (max(charge_density - 0.25, 0) * 25)
+    )
+    instability_index = float(max(5, min(95, instability_index)))
+
+    # Stability score is inverse of instability index
+    stability_score = round(100 - instability_index, 2)
+
+    if stability_score >= 65:
+        stability_class = "High"
+    elif stability_score >= 45:
+        stability_class = "Moderate"
+    else:
+        stability_class = "Low"
+
+    return StabilityResponse(
+        sequence_length=seq_length,
+        instability_index=round(instability_index, 2),
+        stability_score=stability_score,
+        stability_class=stability_class,
+        aromaticity=round(aromaticity, 3),
+        aliphatic_index=round(aliphatic_index, 2),
+        charge_density=round(charge_density, 3),
+        details={
+            "aromatic_residues": aromatic_count,
+            "disorder_promoting_residues": disorder_count,
+            "positively_charged_residues": positive,
+            "negatively_charged_residues": negative,
+            "model": "Deterministic heuristic model for MVP stability screening"
+        },
+    )
+
+
 @app.get("/api/solubility/search")
 @limiter.limit("20/minute")
-async def search_solubility(protein_name: str = "", min_score: float = 0, max_score: float = 100):
+async def search_solubility(request: Request, protein_name: str = "", min_score: float = 0, max_score: float = 100):
     """
     Search protein solubility database.
     Returns dummy data matching the search criteria.
