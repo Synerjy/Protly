@@ -210,6 +210,203 @@ async def predict(request: Request, body: PredictRequest):
     )
 
 
+# ---------------------------------------------------------------------------
+# UniProt Search Proxy
+# ---------------------------------------------------------------------------
+
+UNIPROT_BASE = "https://rest.uniprot.org/uniprotkb"
+
+ORGANISM_MAP = {
+    "human": "9606",
+    "mouse": "10090",
+    "ecoli": "83333",
+}
+
+
+class AnalyzeRequest(BaseModel):
+    sequence: str = Field(..., min_length=10, max_length=10000, description="Amino-acid sequence")
+
+    @field_validator("sequence")
+    @classmethod
+    def validate_amino_acids_analyze(cls, v: str) -> str:
+        cleaned = re.sub(r"[\s\d]", "", v).upper()
+        invalid = set(cleaned) - VALID_AMINO_ACIDS
+        if invalid:
+            raise ValueError(f"Invalid characters: {', '.join(sorted(invalid))}")
+        return cleaned
+
+
+@app.get("/api/uniprot/search")
+@limiter.limit("30/minute")
+async def uniprot_search(
+    request: Request,
+    query: str,
+    reviewed: bool = True,
+    organism: str = "",
+    length_min: int = 1,
+    length_max: int = 1000,
+    page: int = 0,
+    size: int = 25,
+):
+    """Proxy search to UniProt REST API with filters."""
+    if not query.strip():
+        raise HTTPException(status_code=400, detail="Search query cannot be empty.")
+
+    # Build Solr query
+    parts = [query.strip()]
+    if reviewed:
+        parts.append("(reviewed:true)")
+    if organism and organism.lower() in ORGANISM_MAP:
+        parts.append(f"(organism_id:{ORGANISM_MAP[organism.lower()]})")
+    if length_max > 0:
+        safe_min = max(1, length_min)  # UniProt requires min >= 1
+        parts.append(f"(length:[{safe_min} TO {length_max}])")
+
+    solr_query = " AND ".join(parts)
+    offset = page * size
+
+    params = {
+        "query": solr_query,
+        "fields": "accession,id,protein_name,gene_names,organism_name,length",
+        "format": "json",
+        "size": size,
+        "offset": offset,
+    }
+
+    try:
+        resp = requests.get(
+            f"{UNIPROT_BASE}/search",
+            params=params,
+            headers={"Accept": "application/json"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+    except requests.RequestException as exc:
+        logger.error("UniProt search failed: %s", exc)
+        raise HTTPException(status_code=502, detail=f"UniProt API is unavailable. ({type(exc).__name__})")
+
+    data = resp.json()
+    results = data.get("results", [])
+
+    # Parse total from Link header (x-total-results header)
+    total = int(resp.headers.get("x-total-results", len(results)))
+
+    # Flatten results for the frontend
+    rows = []
+    for r in results:
+        protein_name = ""
+        pn = r.get("proteinDescription", {})
+        rec_name = pn.get("recommendedName")
+        if rec_name:
+            protein_name = rec_name.get("fullName", {}).get("value", "")
+        elif pn.get("submissionNames"):
+            protein_name = pn["submissionNames"][0].get("fullName", {}).get("value", "")
+
+        gene_name = ""
+        genes = r.get("genes", [])
+        if genes and genes[0].get("geneName"):
+            gene_name = genes[0]["geneName"].get("value", "")
+
+        organism_name = r.get("organism", {}).get("scientificName", "")
+
+        rows.append({
+            "accession": r.get("primaryAccession", ""),
+            "entryName": r.get("uniProtkbId", ""),
+            "proteinName": protein_name,
+            "geneName": gene_name,
+            "organism": organism_name,
+            "length": r.get("sequence", {}).get("length", 0),
+        })
+
+    return {"results": rows, "total": total, "page": page, "size": size}
+
+
+@app.get("/api/uniprot/entry/{accession}")
+@limiter.limit("30/minute")
+async def uniprot_entry(request: Request, accession: str):
+    """Fetch a full UniProt entry by accession (sequence + metadata)."""
+    try:
+        resp = requests.get(
+            f"{UNIPROT_BASE}/{accession}",
+            headers={"Accept": "application/json"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+    except requests.RequestException as exc:
+        logger.error("UniProt entry fetch failed: %s", exc)
+        raise HTTPException(status_code=502, detail=f"UniProt API is unavailable. ({type(exc).__name__})")
+
+    data = resp.json()
+
+    # Extract protein name
+    protein_name = ""
+    pn = data.get("proteinDescription", {})
+    rec_name = pn.get("recommendedName")
+    if rec_name:
+        protein_name = rec_name.get("fullName", {}).get("value", "")
+    elif pn.get("submissionNames"):
+        protein_name = pn["submissionNames"][0].get("fullName", {}).get("value", "")
+
+    # Gene name
+    gene_name = ""
+    genes = data.get("genes", [])
+    if genes and genes[0].get("geneName"):
+        gene_name = genes[0]["geneName"].get("value", "")
+
+    # Organism
+    organism_name = data.get("organism", {}).get("scientificName", "")
+
+    # Function (cc_function)
+    function_text = ""
+    comments = data.get("comments", [])
+    for c in comments:
+        if c.get("commentType") == "FUNCTION":
+            texts = c.get("texts", [])
+            if texts:
+                function_text = texts[0].get("value", "")
+                break
+
+    # Sequence
+    seq = data.get("sequence", {}).get("value", "")
+    length = data.get("sequence", {}).get("length", len(seq))
+
+    return {
+        "accession": data.get("primaryAccession", accession),
+        "entryName": data.get("uniProtkbId", ""),
+        "proteinName": protein_name,
+        "geneName": gene_name,
+        "organism": organism_name,
+        "function": function_text,
+        "sequence": seq,
+        "length": length,
+    }
+
+
+@app.post("/api/analyze")
+@limiter.limit("30/minute")
+async def analyze_protein(request: Request, body: AnalyzeRequest):
+    """Run Biopython ProteinAnalysis to calculate lab-readiness metrics."""
+    from Bio.SeqUtils.ProtParam import ProteinAnalysis
+
+    sequence = body.sequence
+    try:
+        analysis = ProteinAnalysis(sequence)
+        instability = analysis.instability_index()
+        isoelectric = analysis.isoelectric_point()
+        gravy = analysis.gravy()
+    except Exception as exc:
+        logger.error("ProteinAnalysis failed: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Protein analysis failed: {type(exc).__name__}")
+
+    return {
+        "instability_index": round(instability, 2),
+        "isoelectric_point": round(isoelectric, 2),
+        "gravy": round(gravy, 4),
+        "is_stable": instability < 40,
+        "sequence_length": len(sequence),
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
