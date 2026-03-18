@@ -2,18 +2,33 @@
 
 Protly is a modern, responsive web dashboard built to visualize and analyze protein structures using [ESMFold](https://esmatlas.com/about). 
 
-This project migrates the original Streamlit-based implementation into a robust architecture using a **FastAPI backend** and a **React + Vite frontend** with dynamic 3D molecular visualization.
+This project migrates the original Streamlit-based implementation into a robust architecture using a **FastAPI backend** and a **React + Vite frontend** with dynamic 3D molecular visualization, **UniProt-powered protein discovery**, and **lab-readiness metrics**.
 
 ## Preview
 
 <img width="1920" height="1080" alt="Screenshot 2026-02-27 230522" src="https://github.com/user-attachments/assets/d633c3e9-add7-4aa9-adf4-f0f65675e958" />
 
 ## 🌟 Features
+
+### 🔍 Search & Discovery Engine
+*   **UniProt Integration**: Search across the entire UniProt database by protein name, gene name, or accession ID — powered by the UniProt REST API proxied through the backend.
+*   **Smart Filters**: Filter results by review status (Swiss-Prot), organism (Human, Mouse, E. Coli), and protein length — all as intuitive inline chips.
+*   **Discovery Table**: Paginated results table displaying accession, entry name, protein name, gene, organism, and length with one-click "Analyze" buttons.
+*   **Central Search Panel**: A prominent, Google-style search bar with hero heading and horizontally arranged filter chips for an intuitive search-first experience.
+
+### 🧬 Protein Analysis Pipeline
 *   **3D Molecular Viewer**: Rendering predicted protein structures in high fidelity using `3Dmol.js`, with switchable visualization styles (Cartoon, Stick, Sphere, Surface).
 *   **Seamless ESMFold Integration**: Directly sends sequences to the ESMAtlas API and fetches the predicted `.pdb` structures and `pLDDT` B-factors.
+*   **Protein Bio Card**: Displays protein name, gene, organism, length, and a UniProt functional summary upon selection from the discovery table.
+*   **Lab-Readiness Metrics**: Calculates Instability Index, Isoelectric Point (pI), and GRAVY score using Biopython's `ProteinAnalysis`, with color-coded stability/acidity/hydrophobicity tags.
 *   **Confidence Metrics**: Interactive gauges and a per-residue sparkline chart with detailed residue tooltips showing amino acid letters and confidence classifications.
 *   **Sequence Validation**: Real-time validation of amino acid sequences with clear feedback for invalid characters.
+
+### 🛠️ Architecture & DX
 *   **Multi-Format Export**: Download predicted structures as PDB files or sequences in FASTA format.
+*   **Toast Notifications**: Slide-in notifications for errors, warnings, and success messages with auto-dismiss.
+*   **Skeleton Loading**: Shimmer loading animations on discovery table rows and lab-readiness tiles during API calls.
+*   **State Persistence**: Navigate between discovery results and analysis view without losing search context.
 *   **FastAPI Backend**: A lightweight Python REST API with rate limiting, structured logging, and security headers.
 *   **Modern React UI**: A custom CSS dashboard featuring a responsive layout and beautiful typography (Inter).
 
@@ -21,16 +36,21 @@ This project migrates the original Streamlit-based implementation into a robust 
 ```
 Protly/
 ├── backend/
-│   ├── main.py              # FastAPI server — endpoints, validation, middleware
-│   └── requirements.txt     # Python dependencies
+│   ├── main.py              # FastAPI server — prediction, UniProt proxy, analysis
+│   └── requirements.txt     # Python dependencies (incl. biopython)
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx           # Root component — state management & layout
+│   │   ├── App.jsx           # Root component — three-view state management
 │   │   ├── main.jsx          # React entry point
-│   │   ├── index.css         # Design system & all styles
+│   │   ├── index.css         # Design system & all styles (~1900 lines)
 │   │   └── components/
 │   │       ├── MolViewer.jsx        # 3D protein viewer (3Dmol.js)
 │   │       ├── SequenceInput.jsx    # Sequence input with validation
+│   │       ├── SearchPanel.jsx      # Central search bar & filter chips
+│   │       ├── DiscoveryTable.jsx   # Paginated UniProt results table
+│   │       ├── ProteinBio.jsx       # Protein metadata & functional summary
+│   │       ├── LabReadiness.jsx     # Stability index, pI, GRAVY tiles
+│   │       ├── Toast.jsx            # Slide-in toast notifications
 │   │       ├── PldtMetrics.jsx      # pLDDT score chart
 │   │       ├── ConfidenceBar.jsx    # Circular confidence gauges
 │   │       ├── ProteinMetrics.jsx   # Protein analytics summary
@@ -47,12 +67,12 @@ Protly/
 
 ## 🏗️ Architecture
 *   **Frontend**: React 18, Vite, Chart.js, 3Dmol.js
-*   **Backend**: FastAPI, Uvicorn, Requests, Biotite, NumPy, SlowAPI
+*   **Backend**: FastAPI, Uvicorn, Requests, Biotite, Biopython, NumPy, SlowAPI
 
 ## ⚙️ Prerequisites
 *   **Python** 3.10+
 *   **Node.js** 18+ and **npm**
-*   Internet connection (for ESMAtlas API calls)
+*   Internet connection (for ESMAtlas API and UniProt API calls)
 
 ## 🚀 Getting Started
 
@@ -85,10 +105,13 @@ npm run dev
 ```
 
 ### 3. Open the App
-Navigate to [http://localhost:5173](http://localhost:5173) in your browser. 
-Paste your amino acid sequence into the **Sequence Entry Center** and hit **Predict**.
+Navigate to [http://localhost:5173](http://localhost:5173) in your browser.
 
-*(Note: The prediction can take up to 2 minutes depending on the sequence length and ESMAtlas server load.)*
+**Two ways to analyze proteins:**
+- **Dashboard** — Paste an amino acid sequence into the Sequence Entry Center and click **Predict** for ESMFold structure prediction.
+- **Discovery** — Click the 🔍 icon in the sidebar (or type in the top search bar) to search the UniProt database, filter results, and click **Analyze →** to run the full pipeline.
+
+*(Note: ESMFold prediction can take up to 2 minutes depending on the sequence length and server load.)*
 
 ## 📡 API Reference
 
@@ -96,6 +119,9 @@ Paste your amino acid sequence into the **Sequence Entry Center** and hit **Pred
 |--------|----------|-------------|
 | `GET` | `/api/health` | Health check — returns `{ "status": "ok" }` |
 | `POST` | `/api/predict` | Predict protein structure from an amino acid sequence |
+| `GET` | `/api/uniprot/search` | Proxy filtered searches to the UniProt REST API |
+| `GET` | `/api/uniprot/entry/{accession}` | Fetch full protein entry (sequence + metadata) by accession |
+| `POST` | `/api/analyze` | Calculate lab-readiness metrics (Instability Index, pI, GRAVY) |
 
 ### `POST /api/predict`
 
@@ -122,7 +148,39 @@ Paste your amino acid sequence into the **Sequence Entry Center** and hit **Pred
 }
 ```
 
-**Rate limit**: 10 requests per minute per IP.
+### `GET /api/uniprot/search`
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `query` | string | *required* | Search term (protein name, gene name, or accession) |
+| `reviewed` | bool | `true` | Filter to reviewed (Swiss-Prot) entries only |
+| `organism` | string | `""` | Filter by organism: `human`, `mouse`, or `ecoli` |
+| `length_min` | int | `1` | Minimum protein length |
+| `length_max` | int | `1000` | Maximum protein length |
+| `page` | int | `0` | Page number (0-indexed) |
+| `size` | int | `25` | Results per page |
+
+### `POST /api/analyze`
+
+**Request body** (JSON):
+```json
+{
+  "sequence": "MGSSHHHHH..."   // 10–10000 chars
+}
+```
+
+**Response** (JSON):
+```json
+{
+  "instability_index": 40.33,
+  "isoelectric_point": 5.22,
+  "gravy": 0.1927,
+  "is_stable": false,
+  "sequence_length": 110
+}
+```
+
+**Rate limit**: 30 requests per minute per IP (search, entry, analyze); 10/min for predict.
 
 ## 📥 Exporting
 Once the structure is predicted, you can:
@@ -139,7 +197,8 @@ Once the structure is predicted, you can:
 ## 📜 Credits
 *   Inspired by the original Streamlit ESMFold app by Chanin Nantasenamat.
 *   Powered by the Meta [ESM-2 language model](https://ai.facebook.com/blog/protein-folding-esmfold-metagenomics/).
+*   Protein search powered by the [UniProt REST API](https://www.uniprot.org/help/api).
+*   Lab-readiness metrics calculated with [Biopython](https://biopython.org/).
 
 ## 📄 License
 This project is for educational and research purposes. See the repository for license details.
-

@@ -273,140 +273,200 @@ async def predict(request: Request, body: PredictRequest):
     )
 
 
-@app.post("/api/solubility", response_model=SolubilityResponse)
-@limiter.limit("20/minute")
-async def measure_solubility(request: Request, body: SolubilityRequest):
-    """
-    Measure and predict protein solubility from amino acid sequence.
-    Returns dummy/mock data for demonstration purposes.
-    """
-    sequence = body.sequence  # already cleaned by validator
+# ---------------------------------------------------------------------------
+# UniProt Search Proxy
+# ---------------------------------------------------------------------------
 
-    # ---- Hydrophobicity scale (Kyte-Doolittle) ----
-    hydro_scale = {
-        'A': 1.8, 'R': -4.5, 'N': -3.5, 'D': -3.5, 'C': 2.5,
-        'Q': -3.5, 'E': -3.5, 'G': -0.4, 'H': -3.2, 'I': 4.5,
-        'L': 3.8, 'K': -3.9, 'M': 1.9, 'F': 2.8, 'P': -1.6,
-        'S': -0.8, 'T': -0.7, 'W': -0.9, 'Y': -1.3, 'V': 4.2
+UNIPROT_BASE = "https://rest.uniprot.org/uniprotkb"
+
+ORGANISM_MAP = {
+    "human": "9606",
+    "mouse": "10090",
+    "ecoli": "83333",
+}
+
+
+class AnalyzeRequest(BaseModel):
+    sequence: str = Field(..., min_length=10, max_length=10000, description="Amino-acid sequence")
+
+    @field_validator("sequence")
+    @classmethod
+    def validate_amino_acids_analyze(cls, v: str) -> str:
+        cleaned = re.sub(r"[\s\d]", "", v).upper()
+        invalid = set(cleaned) - VALID_AMINO_ACIDS
+        if invalid:
+            raise ValueError(f"Invalid characters: {', '.join(sorted(invalid))}")
+        return cleaned
+
+
+@app.get("/api/uniprot/search")
+@limiter.limit("30/minute")
+async def uniprot_search(
+    request: Request,
+    query: str,
+    reviewed: bool = True,
+    organism: str = "",
+    length_min: int = 1,
+    length_max: int = 1000,
+    page: int = 0,
+    size: int = 25,
+):
+    """Proxy search to UniProt REST API with filters."""
+    if not query.strip():
+        raise HTTPException(status_code=400, detail="Search query cannot be empty.")
+
+    # Build Solr query
+    parts = [query.strip()]
+    if reviewed:
+        parts.append("(reviewed:true)")
+    if organism and organism.lower() in ORGANISM_MAP:
+        parts.append(f"(organism_id:{ORGANISM_MAP[organism.lower()]})")
+    if length_max > 0:
+        safe_min = max(1, length_min)  # UniProt requires min >= 1
+        parts.append(f"(length:[{safe_min} TO {length_max}])")
+
+    solr_query = " AND ".join(parts)
+    offset = page * size
+
+    params = {
+        "query": solr_query,
+        "fields": "accession,id,protein_name,gene_names,organism_name,length",
+        "format": "json",
+        "size": size,
+        "offset": offset,
     }
 
-    # ---- Calculate features ----
-    seq_length = len(sequence)
-    
-    # Average hydrophobicity
-    hydro_sum = sum(hydro_scale.get(aa, 0) for aa in sequence)
-    hydrophobicity = hydro_sum / seq_length if seq_length > 0 else 0
-
-    # Count charged residues (positive: K, R; negative: D, E)
-    positive = sum(1 for aa in sequence if aa in 'KR')
-    negative = sum(1 for aa in sequence if aa in 'DE')
-    total_charged = positive + negative
-    charge_ratio = total_charged / seq_length if seq_length > 0 else 0
-
-    # ---- Dummy solubility prediction ----
-    # Combine features to get a solubility score (0-100)
-    # Higher charge ratio and lower hydrophobicity generally = more soluble
-    base_score = 50
-    
-    # Adjust for hydrophobicity (very hydrophobic proteins are less soluble)
-    if hydrophobicity > 2:
-        base_score -= 20
-    elif hydrophobicity > 1:
-        base_score -= 10
-    elif hydrophobicity < -1:
-        base_score += 15
-    
-    # Adjust for charge (more charged = more soluble)
-    if charge_ratio > 0.3:
-        base_score += 20
-    elif charge_ratio > 0.15:
-        base_score += 10
-    
-    # Add some randomness for demonstration
-    solubility_score = min(100, max(0, base_score + np.random.uniform(-5, 5)))
-    
-    # Classify solubility
-    if solubility_score >= 65:
-        solubility_class = "High"
-    elif solubility_score >= 45:
-        solubility_class = "Moderate"
-    else:
-        solubility_class = "Low"
-
-    prediction_confidence = round(0.75 + np.random.uniform(-0.1, 0.15), 2)
-
-    return SolubilityResponse(
-        sequence_length=seq_length,
-        solubility_score=round(solubility_score, 2),
-        solubility_class=solubility_class,
-        hydrophobicity=round(hydrophobicity, 3),
-        charge_ratio=round(charge_ratio, 3),
-        prediction_confidence=prediction_confidence,
-        details={
-            "positive_residues": positive,
-            "negative_residues": negative,
-            "total_charged": total_charged,
-            "hydrophobic_residues": sum(1 for aa in sequence if aa in 'AILMFVP'),
-            "note": "Dummy prediction for demonstration. In production, this would use ML models."
-        }
-    )
-
-
-@app.post("/api/stability", response_model=StabilityResponse)
-@limiter.limit("20/minute")
-async def measure_stability(request: Request, body: StabilityRequest):
-    """Estimate protein stability from sequence-derived biochemical features."""
-    sequence = body.sequence  # already cleaned by validator
-
     try:
-        metrics = compute_stability_metrics(sequence)
-    except Exception as exc:
-        logger.error("Stability computation failed: %s", exc, exc_info=True)
-        raise HTTPException(status_code=500, detail="Stability computation failed. Please try again.")
+        resp = requests.get(
+            f"{UNIPROT_BASE}/search",
+            params=params,
+            headers={"Accept": "application/json"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+    except requests.RequestException as exc:
+        logger.error("UniProt search failed: %s", exc)
+        raise HTTPException(status_code=502, detail=f"UniProt API is unavailable. ({type(exc).__name__})")
 
-    return StabilityResponse(**metrics)
+    data = resp.json()
+    results = data.get("results", [])
+
+    # Parse total from Link header (x-total-results header)
+    total = int(resp.headers.get("x-total-results", len(results)))
+
+    # Flatten results for the frontend
+    rows = []
+    for r in results:
+        protein_name = ""
+        pn = r.get("proteinDescription", {})
+        rec_name = pn.get("recommendedName")
+        if rec_name:
+            protein_name = rec_name.get("fullName", {}).get("value", "")
+        elif pn.get("submissionNames"):
+            protein_name = pn["submissionNames"][0].get("fullName", {}).get("value", "")
+
+        gene_name = ""
+        genes = r.get("genes", [])
+        if genes and genes[0].get("geneName"):
+            gene_name = genes[0]["geneName"].get("value", "")
+
+        organism_name = r.get("organism", {}).get("scientificName", "")
+
+        rows.append({
+            "accession": r.get("primaryAccession", ""),
+            "entryName": r.get("uniProtkbId", ""),
+            "proteinName": protein_name,
+            "geneName": gene_name,
+            "organism": organism_name,
+            "length": r.get("sequence", {}).get("length", 0),
+        })
+
+    return {"results": rows, "total": total, "page": page, "size": size}
 
 
-@app.get("/api/solubility/search")
-@limiter.limit("20/minute")
-async def search_solubility(request: Request, protein_name: str = "", min_score: float = 0, max_score: float = 100):
-    """
-    Search protein solubility database.
-    Returns dummy data matching the search criteria.
-    """
-    if min_score < 0 or min_score > 100 or max_score < 0 or max_score > 100:
-        raise HTTPException(status_code=400, detail="Scores must be between 0 and 100")
-    
-    if min_score > max_score:
-        raise HTTPException(status_code=400, detail="min_score must be less than or equal to max_score")
+@app.get("/api/uniprot/entry/{accession}")
+@limiter.limit("30/minute")
+async def uniprot_entry(request: Request, accession: str):
+    """Fetch a full UniProt entry by accession (sequence + metadata)."""
+    try:
+        resp = requests.get(
+            f"{UNIPROT_BASE}/{accession}",
+            headers={"Accept": "application/json"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+    except requests.RequestException as exc:
+        logger.error("UniProt entry fetch failed: %s", exc)
+        raise HTTPException(status_code=502, detail=f"UniProt API is unavailable. ({type(exc).__name__})")
 
-    # ---- Dummy database ----
-    dummy_proteins = [
-        {"name": "Ubiquitin", "solubility_score": 82.5, "class": "High"},
-        {"name": "insulin", "solubility_score": 45.3, "class": "Moderate"},
-        {"name": "Lysozyme", "solubility_score": 78.9, "class": "High"},
-        {"name": "Hemoglobin", "solubility_score": 55.2, "class": "Moderate"},
-        {"name": "Myoglobin", "solubility_score": 72.1, "class": "High"},
-        {"name": "Collagen", "solubility_score": 28.4, "class": "Low"},
-        {"name": "Amylase", "solubility_score": 85.7, "class": "High"},
-        {"name": "Protease", "solubility_score": 61.3, "class": "Moderate"},
-    ]
+    data = resp.json()
 
-    # Filter by name and score range
-    results = [
-        p for p in dummy_proteins
-        if (protein_name.lower() in p["name"].lower() and
-            min_score <= p["solubility_score"] <= max_score)
-    ]
+    # Extract protein name
+    protein_name = ""
+    pn = data.get("proteinDescription", {})
+    rec_name = pn.get("recommendedName")
+    if rec_name:
+        protein_name = rec_name.get("fullName", {}).get("value", "")
+    elif pn.get("submissionNames"):
+        protein_name = pn["submissionNames"][0].get("fullName", {}).get("value", "")
+
+    # Gene name
+    gene_name = ""
+    genes = data.get("genes", [])
+    if genes and genes[0].get("geneName"):
+        gene_name = genes[0]["geneName"].get("value", "")
+
+    # Organism
+    organism_name = data.get("organism", {}).get("scientificName", "")
+
+    # Function (cc_function)
+    function_text = ""
+    comments = data.get("comments", [])
+    for c in comments:
+        if c.get("commentType") == "FUNCTION":
+            texts = c.get("texts", [])
+            if texts:
+                function_text = texts[0].get("value", "")
+                break
+
+    # Sequence
+    seq = data.get("sequence", {}).get("value", "")
+    length = data.get("sequence", {}).get("length", len(seq))
 
     return {
-        "query": {
-            "protein_name": protein_name,
-            "min_score": min_score,
-            "max_score": max_score
-        },
-        "count": len(results),
-        "results": results
+        "accession": data.get("primaryAccession", accession),
+        "entryName": data.get("uniProtkbId", ""),
+        "proteinName": protein_name,
+        "geneName": gene_name,
+        "organism": organism_name,
+        "function": function_text,
+        "sequence": seq,
+        "length": length,
+    }
+
+
+@app.post("/api/analyze")
+@limiter.limit("30/minute")
+async def analyze_protein(request: Request, body: AnalyzeRequest):
+    """Run Biopython ProteinAnalysis to calculate lab-readiness metrics."""
+    from Bio.SeqUtils.ProtParam import ProteinAnalysis
+
+    sequence = body.sequence
+    try:
+        analysis = ProteinAnalysis(sequence)
+        instability = analysis.instability_index()
+        isoelectric = analysis.isoelectric_point()
+        gravy = analysis.gravy()
+    except Exception as exc:
+        logger.error("ProteinAnalysis failed: %s", exc)
+        raise HTTPException(status_code=500, detail=f"Protein analysis failed: {type(exc).__name__}")
+
+    return {
+        "instability_index": round(instability, 2),
+        "isoelectric_point": round(isoelectric, 2),
+        "gravy": round(gravy, 4),
+        "is_stable": instability < 40,
+        "sequence_length": len(sequence),
     }
 
 
