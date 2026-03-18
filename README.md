@@ -1,4 +1,4 @@
-# Protly — Protein Folding Analysis Dashboard
+# PROTLY — Protein Folding Analysis Dashboard
 
 Protly is a modern, responsive web dashboard built to visualize and analyze protein structures using [ESMFold](https://esmatlas.com/about). 
 
