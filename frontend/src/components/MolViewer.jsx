@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-import { useEffect, useRef } from 'react';
-=======
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 const VIZ_STYLES = [
@@ -9,13 +6,10 @@ const VIZ_STYLES = [
     { key: 'sphere', label: 'Sphere', icon: '●' },
     { key: 'surface', label: 'Surface', icon: '◐' },
 ];
->>>>>>> Rudraksh
 
 export default function MolViewer({ pdbData, status }) {
     const containerRef = useRef(null);
     const viewerRef = useRef(null);
-<<<<<<< HEAD
-=======
     const [vizStyle, setVizStyle] = useState('cartoon');
 
     const applyStyle = useCallback((style) => {
@@ -39,7 +33,6 @@ export default function MolViewer({ pdbData, status }) {
         }
         viewer.render();
     }, []);
->>>>>>> Rudraksh
 
     useEffect(() => {
         // Only initialize once we have data and 3Dmol is available
@@ -69,10 +62,7 @@ export default function MolViewer({ pdbData, status }) {
             viewer.render();
 
             viewerRef.current = viewer;
-<<<<<<< HEAD
-=======
             setVizStyle('cartoon');
->>>>>>> Rudraksh
         });
 
         return () => {
@@ -117,8 +107,6 @@ export default function MolViewer({ pdbData, status }) {
                         ref={containerRef}
                         style={{ width: '100%', height: '100%' }}
                     />
-<<<<<<< HEAD
-=======
                     {/* Visualization style selector */}
                     <div className="mol-viewer__style-bar">
                         {VIZ_STYLES.map((s) => (
@@ -136,7 +124,6 @@ export default function MolViewer({ pdbData, status }) {
                             </button>
                         ))}
                     </div>
->>>>>>> Rudraksh
                     <div className="mol-viewer__overlay-controls">
                         <button
                             className="mol-viewer__overlay-btn"
