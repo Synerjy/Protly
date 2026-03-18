@@ -12,11 +12,7 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip);
 
-<<<<<<< HEAD
-export default function PldtMetrics({ plddtData }) {
-=======
 export default function PldtMetrics({ plddtData, sequence }) {
->>>>>>> Rudraksh
     const mean = plddtData?.mean ?? null;
     const perResidue = plddtData?.per_residue ?? [];
 
@@ -50,9 +46,6 @@ export default function PldtMetrics({ plddtData, sequence }) {
         plugins: {
             tooltip: {
                 callbacks: {
-<<<<<<< HEAD
-                    label: (ctx) => `pLDDT: ${ctx.parsed.y.toFixed(1)}`,
-=======
                     label: (ctx) => {
                         const val = ctx.parsed.y;
                         const residueIdx = parseInt(ctx.label) - 1;
@@ -63,7 +56,6 @@ export default function PldtMetrics({ plddtData, sequence }) {
                             aa ? `Amino Acid: ${aa}` : '',
                         ].filter(Boolean);
                     },
->>>>>>> Rudraksh
                     title: (items) => `Residue ${items[0]?.label}`,
                 },
             },
