@@ -1,4 +1,14 @@
-export default function Sidebar({ activeView, onViewChange }) {
+import { useState } from 'react';
+
+export default function Sidebar({ activeView, onViewChange, user, onSignOut }) {
+    const [showMenu, setShowMenu] = useState(false);
+
+    const initials = user?.user_metadata?.full_name
+        ? user.user_metadata.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+        : user?.email?.[0]?.toUpperCase() || 'U';
+
+    const avatarUrl = user?.user_metadata?.avatar_url;
+
     return (
         <aside className="sidebar">
             <div className="sidebar__logo" title="Protly">P</div>
@@ -33,7 +43,55 @@ export default function Sidebar({ activeView, onViewChange }) {
                 <button className="sidebar__nav-item" title="Help">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
                 </button>
-                <div className="sidebar__avatar" title="User Profile">R</div>
+
+                <div className="sidebar__user-menu-wrapper">
+                    <button
+                        className="sidebar__avatar-btn"
+                        title={user?.user_metadata?.full_name || user?.email || 'User'}
+                        onClick={() => setShowMenu(!showMenu)}
+                        id="sidebar-user-btn"
+                    >
+                        {avatarUrl ? (
+                            <img
+                                src={avatarUrl}
+                                alt="User avatar"
+                                className="sidebar__avatar-img"
+                                referrerPolicy="no-referrer"
+                            />
+                        ) : (
+                            <div className="sidebar__avatar" title="User Profile">{initials}</div>
+                        )}
+                    </button>
+
+                    {showMenu && (
+                        <div className="sidebar__user-popup" id="user-popup-menu">
+                            <div className="sidebar__user-popup-header">
+                                {avatarUrl && (
+                                    <img
+                                        src={avatarUrl}
+                                        alt=""
+                                        className="sidebar__popup-avatar"
+                                        referrerPolicy="no-referrer"
+                                    />
+                                )}
+                                <div>
+                                    <div className="sidebar__popup-name">
+                                        {user?.user_metadata?.full_name || 'User'}
+                                    </div>
+                                    <div className="sidebar__popup-email">{user?.email}</div>
+                                </div>
+                            </div>
+                            <button
+                                className="sidebar__signout-btn"
+                                onClick={() => { setShowMenu(false); onSignOut(); }}
+                                id="signout-btn"
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+                                Sign Out
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
         </aside>
     );
