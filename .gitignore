@@ -6,8 +6,7 @@ node_modules
 .pnp.js
 myenv/
 venv/
-env/
-.env
+
 
 # testing
 coverage
@@ -94,3 +93,4 @@ MANIFEST
 .Trashes
 ehthumbs.db
 Thumbs.db
+github_tasks.md
