@@ -42,26 +42,6 @@ export default function App() {
     return headers;
   }, [session]);
 
-  // Show loading spinner during auth check
-  if (loading) {
-    return (
-      <div className="login-page" style={{ justifyContent: 'center', alignItems: 'center' }}>
-        <div className="login-page__bg">
-          <div className="login-page__orb login-page__orb--1" />
-          <div className="login-page__orb login-page__orb--2" />
-        </div>
-        <div style={{ textAlign: 'center', zIndex: 2 }}>
-          <div className="spinner spinner--dark" style={{ width: 32, height: 32, margin: '0 auto 16px' }} />
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Loading Protly…</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Redirect to login when not authenticated
-  if (!session) {
-    return <LoginPage />;
-  }
   // ---- view state ----
   const [view, setView] = useState('dashboard'); // 'dashboard' | 'discovery' | 'analysis'
 
@@ -288,6 +268,27 @@ export default function App() {
     a.click();
     URL.revokeObjectURL(url);
   }, [pdbData, selectedProtein]);
+
+  // Show loading spinner during auth check
+  if (loading) {
+    return (
+      <div className="login-page" style={{ justifyContent: 'center', alignItems: 'center' }}>
+        <div className="login-page__bg">
+          <div className="login-page__orb login-page__orb--1" />
+          <div className="login-page__orb login-page__orb--2" />
+        </div>
+        <div style={{ textAlign: 'center', zIndex: 2 }}>
+          <div className="spinner spinner--dark" style={{ width: 32, height: 32, margin: '0 auto 16px' }} />
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Loading Protly…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to login when not authenticated
+  if (!session) {
+    return <LoginPage />;
+  }
 
   return (
     <div className="app-layout">
