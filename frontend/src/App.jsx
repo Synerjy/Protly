@@ -1,4 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
+import { useAuth } from './components/AuthProvider';
+import LoginPage from './components/LoginPage';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import MolViewer from './components/MolViewer';
@@ -15,7 +17,7 @@ import LabReadiness from './components/LabReadiness';
 import SearchPanel from './components/SearchPanel';
 import Toast from './components/Toast';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
 const DEFAULT_SEQ =
   'MGSSHHHHHHSSGLVPRGSHMRGPNPTAASLEASAGPFTVRSFTVSRPSGYGAGTVYYPTNAGGTVGAIAIVPGYTARQSSIKWWGPRLASHGFVVITIDTNSTLDQPSSRSSQQMAALRQVASLNGTSSSPIYGKVDTARMGVMGWSMGGGGSLISAANNPSLKAAAPQAPWDSSTNFSSVTVPTLIFACENDSIAPVNSSALPIYDSMSRNAKQFLEINGGSHSCANSGNSNQALIGKKGVAWMKRFMDNDTRYSTFACENPNSTRVSDFRTANCSLEDPAANKARKEAELAAATAEQ';
@@ -29,6 +31,17 @@ const DEFAULT_FILTERS = {
 let toastId = 0;
 
 export default function App() {
+  const { session, user, loading, signOut } = useAuth();
+
+  // ---- auth helpers ----
+  const authHeaders = useCallback(() => {
+    const headers = { 'Content-Type': 'application/json' };
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+    return headers;
+  }, [session]);
+
   // ---- view state ----
   const [view, setView] = useState('dashboard'); // 'dashboard' | 'discovery' | 'analysis'
 
@@ -82,7 +95,7 @@ export default function App() {
     try {
       const res = await fetch(`${API_BASE}/api/predict`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ sequence: seq.trim() }),
       });
 
@@ -102,7 +115,7 @@ export default function App() {
       setStatus('error');
       addToast('error', err.message);
     }
-  }, [sequence, addToast]);
+  }, [sequence, addToast, authHeaders]);
 
   // ---- UniProt search ----
   const handleSearch = useCallback(async (query, page = 0) => {
@@ -126,7 +139,9 @@ export default function App() {
         size: '25',
       });
 
-      const res = await fetch(`${API_BASE}/api/uniprot/search?${params}`);
+      const res = await fetch(`${API_BASE}/api/uniprot/search?${params}`, {
+        headers: authHeaders(),
+      });
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
         throw new Error(errBody.detail || `Search failed: ${res.status}`);
@@ -143,7 +158,7 @@ export default function App() {
     } finally {
       setSearchLoading(false);
     }
-  }, [filters, addToast]);
+  }, [filters, addToast, authHeaders]);
 
   const handleFiltersChange = useCallback((updater) => {
     if (typeof updater === 'function') {
@@ -170,7 +185,9 @@ export default function App() {
     setError(null);
 
     try {
-      const entryRes = await fetch(`${API_BASE}/api/uniprot/entry/${accession}`);
+      const entryRes = await fetch(`${API_BASE}/api/uniprot/entry/${accession}`, {
+        headers: authHeaders(),
+      });
       if (!entryRes.ok) {
         const errBody = await entryRes.json().catch(() => ({}));
         throw new Error(errBody.detail || `Failed to fetch entry: ${entryRes.status}`);
@@ -191,12 +208,12 @@ export default function App() {
       const [predictRes, analyzeRes] = await Promise.all([
         fetch(`${API_BASE}/api/predict`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify({ sequence: protein.sequence }),
         }),
         fetch(`${API_BASE}/api/analyze`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify({ sequence: protein.sequence }),
         }),
       ]);
@@ -225,7 +242,7 @@ export default function App() {
       setLabLoading(false);
       addToast('error', err.message);
     }
-  }, [addToast]);
+  }, [addToast, authHeaders]);
 
   // ---- navigation ----
   const handleBackToSearch = useCallback(() => {
@@ -252,11 +269,34 @@ export default function App() {
     URL.revokeObjectURL(url);
   }, [pdbData, selectedProtein]);
 
+  // Show loading spinner during auth check
+  if (loading) {
+    return (
+      <div className="login-page" style={{ justifyContent: 'center', alignItems: 'center' }}>
+        <div className="login-page__bg">
+          <div className="login-page__orb login-page__orb--1" />
+          <div className="login-page__orb login-page__orb--2" />
+        </div>
+        <div style={{ textAlign: 'center', zIndex: 2 }}>
+          <div className="spinner spinner--dark" style={{ width: 32, height: 32, margin: '0 auto 16px' }} />
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Loading Protly…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to login when not authenticated
+  if (!session) {
+    return <LoginPage />;
+  }
+
   return (
     <div className="app-layout">
       <Sidebar
         activeView={view}
         onViewChange={handleViewChange}
+        user={user}
+        onSignOut={signOut}
       />
 
       <div className="main-wrapper">
@@ -266,6 +306,8 @@ export default function App() {
           setSearchQuery={setSearchQuery}
           view={view}
           onBackToSearch={handleBackToSearch}
+          user={user}
+          onSignOut={signOut}
         />
 
         {/* ========== DASHBOARD VIEW ========== */}

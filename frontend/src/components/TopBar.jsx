@@ -1,4 +1,9 @@
-export default function TopBar({ onSearch, searchQuery, setSearchQuery, view, onBackToSearch }) {
+import { useState, useRef, useEffect } from 'react';
+
+export default function TopBar({ onSearch, searchQuery, setSearchQuery, view, onBackToSearch, user, onSignOut }) {
+    const [showUserMenu, setShowUserMenu] = useState(false);
+    const menuRef = useRef(null);
+
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && searchQuery.trim()) {
             onSearch(searchQuery.trim());
@@ -10,6 +15,21 @@ export default function TopBar({ onSearch, searchQuery, setSearchQuery, view, on
             onSearch(searchQuery.trim());
         }
     };
+
+    // Close menu on outside click
+    useEffect(() => {
+        const handleClick = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target)) {
+                setShowUserMenu(false);
+            }
+        };
+        if (showUserMenu) document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, [showUserMenu]);
+
+    const avatarUrl = user?.user_metadata?.avatar_url;
+    const displayName = user?.user_metadata?.full_name || user?.email || 'User';
+    const initials = displayName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
     return (
         <header className="topbar">
@@ -76,8 +96,55 @@ export default function TopBar({ onSearch, searchQuery, setSearchQuery, view, on
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
                 </button>
 
-                <div className="sidebar__avatar" style={{ width: 34, height: 34, fontSize: 12 }} title="Profile">
-                    R
+                {/* User avatar with dropdown */}
+                <div className="topbar__user-wrapper" ref={menuRef}>
+                    <button
+                        className="topbar__user-btn"
+                        onClick={() => setShowUserMenu(!showUserMenu)}
+                        title={displayName}
+                        id="topbar-user-btn"
+                    >
+                        {avatarUrl ? (
+                            <img
+                                src={avatarUrl}
+                                alt={displayName}
+                                className="topbar__user-avatar-img"
+                                referrerPolicy="no-referrer"
+                            />
+                        ) : (
+                            <div className="sidebar__avatar" style={{ width: 34, height: 34, fontSize: 12 }} title="Profile">
+                                {initials}
+                            </div>
+                        )}
+                    </button>
+
+                    {showUserMenu && (
+                        <div className="topbar__user-dropdown" id="topbar-user-dropdown">
+                            <div className="topbar__dropdown-header">
+                                {avatarUrl && (
+                                    <img
+                                        src={avatarUrl}
+                                        alt=""
+                                        className="topbar__dropdown-avatar"
+                                        referrerPolicy="no-referrer"
+                                    />
+                                )}
+                                <div>
+                                    <div className="topbar__dropdown-name">{displayName}</div>
+                                    <div className="topbar__dropdown-email">{user?.email}</div>
+                                </div>
+                            </div>
+                            <hr className="topbar__dropdown-divider" />
+                            <button
+                                className="topbar__dropdown-item topbar__dropdown-item--danger"
+                                onClick={() => { setShowUserMenu(false); onSignOut(); }}
+                                id="topbar-signout-btn"
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+                                Sign Out
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </header>
