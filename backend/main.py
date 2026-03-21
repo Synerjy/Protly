@@ -87,7 +87,7 @@ async def log_requests(request: Request, call_next):
 # ---------------------------------------------------------------------------
 # Models
 # ---------------------------------------------------------------------------
-VALID_AMINO_ACIDS = set("ACDEFGHIKLMNPQRSTVWY")
+VALID_AMINO_ACIDS = set(os.getenv("VALID_AMINO_ACIDS", "A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y").replace(",", ""))
 
 class PredictRequest(BaseModel):
     sequence: str = Field(..., min_length=10, max_length=2000, description="Amino-acid sequence (single letter codes)")

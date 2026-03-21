@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 
-const VALID_AMINO_ACIDS = new Set('ACDEFGHIKLMNPQRSTVWY'.split(''));
+const defaultAminoAcids = 'A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y';
+const aminoAcidsStr = (import.meta.env.VITE_VALID_AMINO_ACIDS || defaultAminoAcids).replace(/,/g, '');
+const VALID_AMINO_ACIDS = new Set(aminoAcidsStr.split(''));
 
 export default function SequenceInput({ sequence, setSequence, onPredict, status }) {
     const isLoading = status === 'processing';
