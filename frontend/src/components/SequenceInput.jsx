@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, memo } from 'react';
+import { useMemo, useState, memo } from 'react';
 
 const defaultAminoAcids = 'A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y';
 const aminoAcidsStr = (import.meta.env.VITE_VALID_AMINO_ACIDS || defaultAminoAcids).replace(
@@ -9,10 +9,12 @@ const VALID_AMINO_ACIDS = new Set(aminoAcidsStr.split(''));
 
 const SequenceInput = memo(function SequenceInput({ sequence: externalSeq, setSequence: setExternalSeq, onPredict, status }) {
   const [localSeq, setLocalSeq] = useState(externalSeq || '');
+  const [prevExternalSeq, setPrevExternalSeq] = useState(externalSeq);
 
-  useEffect(() => {
+  if (externalSeq !== prevExternalSeq) {
+    setPrevExternalSeq(externalSeq);
     setLocalSeq(externalSeq || '');
-  }, [externalSeq]);
+  }
 
   const isLoading = status === 'processing';
   const charCount = localSeq.trim().length;
