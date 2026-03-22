@@ -1,83 +1,66 @@
 import { useMemo } from 'react';
-import { Line } from 'react-chartjs-2';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Filler,
-  Tooltip,
-} from 'chart.js';
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip);
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+} from 'recharts';
 
 export default function PldtMetrics({ plddtData, sequence }) {
   const mean = plddtData?.mean ?? null;
+  const perResidue = plddtData?.per_residue || [];
+  const sequenceLength = sequence?.length || 0;
+  
+  const isValidated = perResidue.length > 0 && perResidue.length === sequenceLength;
 
   const chartData = useMemo(() => {
-    const perResidue = plddtData?.per_residue || [];
-    if (!perResidue.length) return null;
+    if (!perResidue.length) return [];
+    return perResidue.map((val, i) => {
+      let conf = 'Very Low';
+      if (val > 90) conf = 'Very High';
+      else if (val > 70) conf = 'Confident';
+      else if (val > 50) conf = 'Low';
 
-    // Down-sample if too many residues for readability
-    const step = Math.max(1, Math.floor(perResidue.length / 80));
-    const sampled = perResidue.filter((_, i) => i % step === 0);
-    const labels = sampled.map((_, i) => (i * step + 1).toString());
+      return {
+        residueIndex: i + 1,
+        plddt: val,
+        aminoAcid: sequence?.[i] || '?',
+        confidence: conf,
+      };
+    });
+  }, [perResidue, sequence]);
 
-    return {
-      labels,
-      datasets: [
-        {
-          data: sampled,
-          borderColor: '#1B2559',
-          backgroundColor: 'rgba(27, 37, 89, 0.06)',
-          borderWidth: 1.5,
-          pointRadius: 0,
-          fill: true,
-          tension: 0.3,
-        },
-      ],
-    };
-  }, [plddtData?.per_residue]);
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      tooltip: {
-        callbacks: {
-          label: (ctx) => {
-            const val = ctx.parsed.y;
-            const residueIdx = parseInt(ctx.label) - 1;
-            const aa = sequence?.[residueIdx] || '';
-            const conf =
-              val > 90 ? 'Very High' : val > 70 ? 'Confident' : val > 50 ? 'Low' : 'Very Low';
-            return [`pLDDT: ${val.toFixed(1)} (${conf})`, aa ? `Amino Acid: ${aa}` : ''].filter(
-              Boolean
-            );
-          },
-          title: (items) => `Residue ${items[0]?.label}`,
-        },
-      },
-    },
-    scales: {
-      x: {
-        display: false,
-      },
-      y: {
-        display: true,
-        min: 0,
-        max: 100,
-        ticks: {
-          font: { size: 10, family: 'Inter' },
-          color: '#A3AED0',
-          stepSize: 25,
-        },
-        grid: {
-          color: '#E9EDF722',
-        },
-      },
-    },
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div style={{
+          background: '#fff',
+          border: '1px solid #E9EDF7',
+          padding: '8px 12px',
+          borderRadius: 8,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+          fontSize: 13,
+          color: 'var(--navy)',
+          fontFamily: 'Inter, sans-serif'
+        }}>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>Residue {data.residueIndex}</div>
+          <div>Amino Acid: <strong>{data.aminoAcid}</strong></div>
+          <div>pLDDT: <strong>{typeof data.plddt === 'number' ? data.plddt.toFixed(2) : data.plddt}</strong></div>
+          <div style={{ 
+            color: data.plddt > 90 ? '#05cd99' : data.plddt > 70 ? '#4318FF' : data.plddt > 50 ? '#FFCE20' : '#EE5D50',
+            fontWeight: 500,
+            marginTop: 4
+          }}>
+            {data.confidence}
+          </div>
+        </div>
+      );
+    }
+    return null;
   };
 
   return (
@@ -91,25 +74,39 @@ export default function PldtMetrics({ plddtData, sequence }) {
             ❤️
           </span>
           pLDDT Score
-          <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 400 }}>ⓘ</span>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 400, marginLeft: 4 }}>ⓘ</span>
         </div>
         <div className="card__actions">
-          <button className="card__action-btn" title="Calendar">
-            📅
-          </button>
-          <button className="card__action-btn" title="More">
-            ⋮
-          </button>
+          <button className="card__action-btn" title="Calendar">📅</button>
+          <button className="card__action-btn" title="More">⋮</button>
         </div>
       </div>
 
       <div className="card__body">
-        <p
-          style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 'var(--space-sm)' }}
-        >
-          <strong>pLDDT Analysis</strong>
-        </p>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
+        {/* Validation Check */}
+        {perResidue.length > 0 && (
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 6, 
+            marginBottom: 12,
+            padding: '8px 12px',
+            background: isValidated ? 'rgba(5, 205, 153, 0.1)' : 'rgba(238, 93, 80, 0.1)',
+            borderRadius: 6,
+            color: isValidated ? 'var(--success)' : 'var(--danger)',
+            fontSize: 13,
+            fontWeight: 500
+          }}>
+            <span>{isValidated ? '✓' : '⚠️'}</span>
+            <span>
+              {isValidated 
+                ? `Validation Passed: PDB array size (${perResidue.length}) matches sequence length (${sequenceLength}).`
+                : `Validation Failed: PDB array size (${perResidue.length}) does not match sequence length (${sequenceLength}).`}
+            </span>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
           <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
             The average confidence score is
           </span>
@@ -127,10 +124,44 @@ export default function PldtMetrics({ plddtData, sequence }) {
           </span>
         </div>
 
-        {/* Sparkline chart */}
-        {chartData ? (
-          <div className="plddt-metrics__chart">
-            <Line data={chartData} options={chartOptions} />
+        {/* Recharts Area Chart */}
+        {chartData.length > 0 ? (
+          <div className="plddt-metrics__chart" style={{ height: 280, width: '100%', marginTop: 20 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorPlddt" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#1B2559" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#1B2559" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E9EDF7" />
+                <XAxis 
+                  dataKey="residueIndex" 
+                  tick={{ fontSize: 10, fill: '#A3AED0' }} 
+                  axisLine={false} 
+                  tickLine={false}
+                  minTickGap={20}
+                />
+                <YAxis 
+                  domain={[0, 100]} 
+                  ticks={[0, 25, 50, 75, 100]}
+                  tick={{ fontSize: 10, fill: '#A3AED0' }} 
+                  axisLine={false} 
+                  tickLine={false}
+                />
+                <RechartsTooltip content={<CustomTooltip />} />
+                <Area 
+                  type="monotone" 
+                  dataKey="plddt" 
+                  stroke="#1B2559" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorPlddt)" 
+                  activeDot={{ r: 4, strokeWidth: 0, fill: '#4318FF' }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         ) : (
           <div
@@ -141,13 +172,14 @@ export default function PldtMetrics({ plddtData, sequence }) {
               justifyContent: 'center',
               color: 'var(--text-muted)',
               fontSize: 13,
+              height: 200
             }}
           >
-            No data yet
+             No data yet
           </div>
         )}
 
-        <p className="plddt-metrics__desc">
+        <p className="plddt-metrics__desc" style={{ marginTop: 16 }}>
           pLDDT is a per-residue confidence estimate (0-100). Scores above 90 indicate very high
           confidence; 70-90 suggests a generally reliable backbone prediction.
         </p>
