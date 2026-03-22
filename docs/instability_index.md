@@ -59,7 +59,7 @@ It might seem simpler to manually hard-code the dipeptide weight calculation wit
 
 ## 7. How We Ensure Calculation Correctness
 We can be extremely confident that the results rendered on the frontend are correct because:
-1. **Strict Sequence Validation**: Before the sequence even hits Biopython, our FastAPI backend (`backend/main.py`) aggressively sanitizes it. The `validate_amino_acids_analyze` function ensures the string has NO whitespace, NO digits, and strictly encompasses the standard 20 amino acid keys. Biopython is never fed garbage data that could produce anomalous silent responses.
+1. **Sequence Sanitization and Validation**: Before the sequence hits Biopython, our FastAPI backend (`backend/main.py`) aggressively sanitizes it. The `validate_amino_acids_analyze` function systematically strips out any whitespace, line breaks, and digits from the user's input. It then strictly verifies that the resulting cleaned string consists entirely of the standard 20 amino acid keys. Because it sanitizes spaces and numbers, researchers are able to effortlessly copy-paste raw formatted sequences (like multi-line FASTA strings with numerical indices) entirely without errors. This safely guarantees that Biopython is only ever fed a pure, valid amino-acid string, preventing anomalous manual input calculation errors.
 2. **Standardization**: Implementing the industry-standard Biopython guarantees that our computation identically matches the outputs researcher users would derive when analyzing their sequences via other standard bioinformatics portals (e.g., ExPASy ProtParam tool).
 3. **Open Source Verifiability**: Users can inspect Biopython's implementation logic line by line on GitHub to assure themselves of its rigorousness.
 
