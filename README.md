@@ -20,7 +20,7 @@ This project migrates the original Streamlit-based implementation into a robust 
 *   **3D Molecular Viewer**: Rendering predicted protein structures in high fidelity using `3Dmol.js`, with switchable visualization styles (Cartoon, Stick, Sphere, Surface).
 *   **Seamless ESMFold Integration**: Directly sends sequences to the ESMAtlas API and fetches the predicted `.pdb` structures and `pLDDT` B-factors.
 *   **Protein Bio Card**: Displays protein name, gene, organism, length, and a UniProt functional summary upon selection from the discovery table.
-*   **Lab-Readiness Metrics**: Calculates Instability Index, Isoelectric Point (pI), and GRAVY score using Biopython's `ProteinAnalysis`, with color-coded stability/acidity/hydrophobicity tags.
+*   **Lab-Readiness Metrics**: Calculates Instability Index, Isoelectric Point (pI), and GRAVY score using Biopython's `ProteinAnalysis`, with color-coded stability/acidity/hydrophobicity tags. ([Learn more about the Instability Index calculation here](./docs/instability_index.md))
 *   **Confidence Metrics**: Interactive gauges and a per-residue sparkline chart with detailed residue tooltips showing amino acid letters and confidence classifications.
 *   **Sequence Validation**: Real-time validation of amino acid sequences with clear feedback for invalid characters.
 
