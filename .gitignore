@@ -101,3 +101,7 @@ impeccable.md
 .impeccable.md
 report_extracted.txt
 Team_T8_report_*.pdf
+
+# Local agent setup
+.agents/
+skills-lock.json
