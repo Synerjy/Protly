@@ -95,3 +95,15 @@ MANIFEST
 ehthumbs.db
 Thumbs.db
 github_tasks.md
+TESTSPRITE_GUIDE.md
+
+# AI & LLM Agents
+.gemini/
+
+# Testing Caches
+.pytest_cache/
+.mypy_cache/
+
+# TestSprite 
+testsprite/
+protly_openapi.json
