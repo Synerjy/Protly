@@ -10,7 +10,7 @@ export default function ProteinMetrics({ plddtData, seqLength }) {
         <div className="card__title">
           <span
             className="card__title-icon"
-            style={{ background: 'rgba(27, 37, 89, 0.08)', color: 'var(--navy)' }}
+            style={{ color: 'var(--accent)' }}
           >
             📊
           </span>
@@ -81,7 +81,7 @@ export default function ProteinMetrics({ plddtData, seqLength }) {
                 cy="60"
                 r="50"
                 fill="none"
-                stroke="var(--navy)"
+                stroke="var(--text-primary)"
                 strokeWidth="8"
                 strokeLinecap="round"
                 strokeDasharray={`${(plddtData.mean / 100) * 314} 314`}
@@ -95,7 +95,7 @@ export default function ProteinMetrics({ plddtData, seqLength }) {
               textAnchor="middle"
               fontSize="22"
               fontWeight="800"
-              fill="var(--navy)"
+              fill="var(--text-primary)"
             >
               {plddtData ? Math.round(plddtData.mean) : '—'}
             </text>

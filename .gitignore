@@ -100,9 +100,10 @@ TESTSPRITE_GUIDE.md
 # AI & LLM Agents
 .gemini/
 
-# Testing Caches
-.pytest_cache/
-.mypy_cache/
-
-# Un-ignore the frontend lib folder which was caught by the Python lib/ rule
-!frontend/src/lib/
+# AI Agent Reports & Metadata
+.agents/
+impeccable.md
+.impeccable.md
+audit_report.md
+critique_report.md
+Team_T8_report_*.pdf
