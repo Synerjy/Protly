@@ -10,11 +10,11 @@ export default function ProteinBio({ protein }) {
     const displayText = isLong && !expanded ? functionText.slice(0, 250) + '…' : functionText;
 
     return (
-        <div className="card" id="protein-bio-card">
+        <div className="card" id="protein-bio-card" role="region" aria-label={`Protein bio: ${protein.proteinName || protein.accession}`}>
             <div className="card__header">
                 <div className="card__title">
-                    <span className="card__title-icon" style={{ background: 'rgba(124, 58, 237, 0.1)', color: '#7C3AED' }}>
-                        🧬
+                    <span className="card__title-icon" style={{ background: 'var(--secondary-accent-bg)', color: 'var(--secondary-accent)' }}>
+                        <span aria-hidden="true">🧬</span>
                     </span>
                     Protein Bio
                 </div>
@@ -35,12 +35,12 @@ export default function ProteinBio({ protein }) {
 
                 <div className="protein-bio__meta-row">
                     <span className="protein-bio__meta-label">Organism</span>
-                    <span className="protein-bio__organism-badge">{protein.organism}</span>
+                    <span className="protein-bio__organism-badge">{protein.organism || '—'}</span>
                 </div>
 
                 <div className="protein-bio__meta-row">
                     <span className="protein-bio__meta-label">Length</span>
-                    <span className="protein-bio__meta-value">{protein.length} AA</span>
+                    <span className="protein-bio__meta-value">{protein.length != null ? `${protein.length} AA` : '—'}</span>
                 </div>
 
                 {functionText && (
@@ -51,6 +51,8 @@ export default function ProteinBio({ protein }) {
                             <button
                                 className="protein-bio__expand-btn"
                                 onClick={() => setExpanded(!expanded)}
+                                aria-expanded={expanded}
+                                aria-label={expanded ? 'Show less of functional summary' : 'Read more of functional summary'}
                             >
                                 {expanded ? 'Show less' : 'Read more'}
                             </button>

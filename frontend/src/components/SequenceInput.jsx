@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 
 const VALID_AMINO_ACIDS = new Set('ACDEFGHIKLMNPQRSTVWY'.split(''));
+const MAX_SEQUENCE_LENGTH = 2000;
 
 export default function SequenceInput({ sequence, setSequence, onPredict, status }) {
     const isLoading = status === 'processing';
@@ -15,13 +16,14 @@ export default function SequenceInput({ sequence, setSequence, onPredict, status
     }, [sequence]);
 
     const hasInvalid = invalidChars.length > 0;
+    const isTooLong = charCount > MAX_SEQUENCE_LENGTH;
 
     return (
-        <div className="card" id="sequence-input-card">
+        <div className="card" id="sequence-input-card" role="region" aria-label="Sequence entry">
             <div className="card__header">
                 <div className="card__title">
-                    <span className="card__title-icon" style={{ background: 'rgba(74, 108, 247, 0.1)', color: 'var(--accent)' }}>
-                        🧪
+                    <span className="card__title-icon" style={{ background: 'var(--accent-bg)', color: 'var(--accent)' }}>
+                        <span aria-hidden="true">🧪</span>
                     </span>
                     Sequence Entry Center
                 </div>
@@ -29,6 +31,7 @@ export default function SequenceInput({ sequence, setSequence, onPredict, status
                     <button
                         className="card__action-btn"
                         title="Paste from clipboard"
+                        aria-label="Paste sequence from clipboard"
                         onClick={async () => {
                             try {
                                 const text = await navigator.clipboard.readText();
@@ -38,19 +41,21 @@ export default function SequenceInput({ sequence, setSequence, onPredict, status
                             }
                         }}
                     >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
                     </button>
                     <button
                         className="card__action-btn"
-                        title="Clear"
+                        title="Clear sequence"
+                        aria-label="Clear sequence"
                         onClick={() => setSequence('')}
                     >
-                        ✕
+                        <span aria-hidden="true">✕</span>
                     </button>
                 </div>
             </div>
 
             <div className="card__body">
+                <label htmlFor="sequence-textarea" className="sr-only">Amino acid sequence</label>
                 <textarea
                     id="sequence-textarea"
                     className="sequence-input__textarea"
@@ -58,11 +63,14 @@ export default function SequenceInput({ sequence, setSequence, onPredict, status
                     value={sequence}
                     onChange={(e) => setSequence(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))}
                     spellCheck={false}
-                    style={hasInvalid ? { borderColor: 'var(--warning)' } : undefined}
+                    maxLength={MAX_SEQUENCE_LENGTH + 100}
+                    aria-describedby="seq-validation-msg seq-char-count"
+                    aria-invalid={hasInvalid || isTooLong ? 'true' : undefined}
+                    style={hasInvalid || isTooLong ? { borderColor: 'var(--warning)' } : undefined}
                 />
 
                 {hasInvalid && (
-                    <div className="sequence-input__validation-warning" style={{
+                    <div id="seq-validation-msg" className="sequence-input__validation-warning" role="alert" style={{
                         color: 'var(--warning)',
                         fontSize: 12,
                         marginTop: 6,
@@ -74,27 +82,44 @@ export default function SequenceInput({ sequence, setSequence, onPredict, status
                     </div>
                 )}
 
+                {isTooLong && (
+                    <div role="alert" style={{
+                        color: 'var(--error)',
+                        fontSize: 12,
+                        marginTop: 6,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                    }}>
+                        ⚠ Sequence exceeds {MAX_SEQUENCE_LENGTH} residues — ESMFold limit. Trim the sequence before predicting.
+                    </div>
+                )}
+
                 <div className="sequence-input__footer">
-                    <span className="sequence-input__char-count">
-                        {charCount} residue{charCount !== 1 ? 's' : ''}
+                    <span className="sequence-input__char-count" id="seq-char-count">
+                        {charCount.toLocaleString()} residue{charCount !== 1 ? 's' : ''}
                         {charCount < 10 && charCount > 0 && (
                             <span style={{ color: 'var(--warning)', marginLeft: 6 }}>Min 10 required</span>
+                        )}
+                        {isTooLong && (
+                            <span style={{ color: 'var(--error)', marginLeft: 6 }}>Max {MAX_SEQUENCE_LENGTH}</span>
                         )}
                     </span>
                     <button
                         id="predict-btn"
                         className="sequence-input__predict-btn"
                         onClick={onPredict}
-                        disabled={isLoading || charCount < 10 || hasInvalid}
+                        disabled={isLoading || charCount < 10 || hasInvalid || isTooLong}
+                        aria-label={isLoading ? 'Prediction in progress' : 'Predict protein structure'}
                     >
                         {isLoading ? (
                             <>
-                                <span className="spinner" />
+                                <span className="spinner" aria-hidden="true" />
                                 Predicting…
                             </>
                         ) : (
                             <>
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3" /></svg>
                                 Predict
                             </>
                         )}

@@ -259,7 +259,7 @@ export default function App() {
         onViewChange={handleViewChange}
       />
 
-      <div className="main-wrapper">
+      <main className="main-wrapper" role="main">
         <TopBar
           onSearch={handleSearch}
           searchQuery={searchQuery}
@@ -409,9 +409,11 @@ export default function App() {
             </div>
           </>
         )}
-      </div>
+      </main>
 
-      <Toast toasts={toasts} onDismiss={dismissToast} />
+      <div aria-live="polite" aria-atomic="false">
+        <Toast toasts={toasts} onDismiss={dismissToast} />
+      </div>
     </div>
   );
 }

@@ -8,14 +8,19 @@ export default function PredictionStatus({ status, error }) {
 
     const c = config[status] || config.ready;
 
+    const iconBgMap = {
+        complete: 'var(--accent-bg)',
+        error: 'var(--error-bg)',
+    };
+
     return (
         <>
             {/* Status bar */}
-            <div className="prediction-status">
+            <div className="prediction-status" role="status" aria-live="polite">
                 <div className="prediction-status__badge-row">
                     <span className="prediction-status__label">Prediction Status</span>
                     <span className={`prediction-status__badge prediction-status__badge--${c.cssClass}`}>
-                        <span className={`prediction-status__badge-dot${status === 'processing' ? ' animate-pulse' : ''}`} />
+                        <span className={`prediction-status__badge-dot${status === 'processing' ? ' animate-pulse' : ''}`} aria-hidden="true" />
                         {c.label}
                     </span>
                 </div>
@@ -23,17 +28,13 @@ export default function PredictionStatus({ status, error }) {
             </div>
 
             {/* Condition-detected style card */}
-            <div className="status-card">
+            <div className="status-card" aria-label={`Prediction state: ${c.label}`}>
                 <div
                     className="status-card__icon"
                     style={{
-                        background:
-                            status === 'complete'
-                                ? 'rgba(74, 108, 247, 0.1)'
-                                : status === 'error'
-                                    ? 'rgba(238, 93, 80, 0.1)'
-                                    : 'rgba(143, 155, 186, 0.1)',
+                        background: iconBgMap[status] || 'var(--muted-bg)',
                     }}
+                    aria-hidden="true"
                 >
                     {status === 'complete' ? '🧬' : status === 'error' ? '⚠️' : '🔬'}
                 </div>
@@ -57,7 +58,7 @@ export default function PredictionStatus({ status, error }) {
                                     : 'Enter a sequence to begin'}
                     </div>
                 </div>
-                <span className="status-card__chevron">›</span>
+                <span className="status-card__chevron" aria-hidden="true">›</span>
             </div>
         </>
     );

@@ -1,37 +1,16 @@
-import { useState } from 'react';
-
 export default function ProteinMetrics({ plddtData, seqLength }) {
-    const [activeTab, setActiveTab] = useState('Overview');
-    const tabs = ['All', 'Overview', 'Solubility', 'Stability', 'pI'];
-
     return (
-        <div className="card" id="protein-metrics-card">
+        <div className="card" id="protein-metrics-card" role="region" aria-label="Protein analytics">
             <div className="card__header">
                 <div className="card__title">
-                    <span className="card__title-icon" style={{ background: 'rgba(27, 37, 89, 0.08)', color: 'var(--navy)' }}>
-                        📊
+                    <span className="card__title-icon" style={{ background: 'var(--navy-bg)', color: 'var(--navy)' }}>
+                        <span aria-hidden="true">📊</span>
                     </span>
                     Protein Analytics
-                </div>
-                <div className="card__actions">
-                    <button className="card__action-btn" title="Calendar">📅</button>
-                    <button className="card__action-btn" title="More">⋮</button>
                 </div>
             </div>
 
             <div className="card__body">
-                <div className="tabs">
-                    {tabs.map((t) => (
-                        <button
-                            key={t}
-                            className={`tab${activeTab === t ? ' tab--active' : ''}`}
-                            onClick={() => setActiveTab(t)}
-                        >
-                            {t}
-                        </button>
-                    ))}
-                </div>
-
                 <div className="protein-metrics">
                     <div className="protein-metrics__tile">
                         <span className="protein-metrics__tile-label">Sequence Length</span>
@@ -55,8 +34,8 @@ export default function ProteinMetrics({ plddtData, seqLength }) {
                     marginTop: 'var(--space-md)',
                     position: 'relative',
                 }}>
-                    {/* Circular gauge mimicking the weight gauge */}
-                    <svg width="90" height="90" viewBox="0 0 120 120">
+                    {/* Circular gauge */}
+                    <svg width="90" height="90" viewBox="0 0 120 120" role="img" aria-label={`pLDDT gauge: ${plddtData ? Math.round(plddtData.mean) : 'No data'}`}>
                         <circle cx="60" cy="60" r="50" fill="none" stroke="var(--border)" strokeWidth="8" strokeDasharray="6 4" />
                         {plddtData && (
                             <circle

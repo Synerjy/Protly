@@ -94,3 +94,10 @@ MANIFEST
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Impeccable and Reports
+*impeccable*
+impeccable.md
+.impeccable.md
+report_extracted.txt
+Team_T8_report_*.pdf

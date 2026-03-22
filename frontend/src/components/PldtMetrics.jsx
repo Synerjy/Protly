@@ -29,8 +29,8 @@ export default function PldtMetrics({ plddtData, sequence }) {
             datasets: [
                 {
                     data: sampled,
-                    borderColor: '#1B2559',
-                    backgroundColor: 'rgba(27, 37, 89, 0.06)',
+                    borderColor: 'var(--navy)',
+                    backgroundColor: 'var(--navy-bg-fill)',
                     borderWidth: 1.5,
                     pointRadius: 0,
                     fill: true,
@@ -40,7 +40,7 @@ export default function PldtMetrics({ plddtData, sequence }) {
         };
     }, [perResidue]);
 
-    const chartOptions = {
+    const chartOptions = useMemo(() => ({
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -69,30 +69,26 @@ export default function PldtMetrics({ plddtData, sequence }) {
                 min: 0,
                 max: 100,
                 ticks: {
-                    font: { size: 10, family: 'Inter' },
+                    font: { size: 10 },
                     color: '#A3AED0',
                     stepSize: 25,
                 },
                 grid: {
-                    color: '#E9EDF722',
+                    color: 'rgba(233, 237, 247, 0.13)',
                 },
             },
         },
-    };
+    }), [sequence]);
 
     return (
-        <div className="card" id="plddt-metrics-card">
+        <div className="card" id="plddt-metrics-card" role="region" aria-label="pLDDT confidence score">
             <div className="card__header">
                 <div className="card__title">
-                    <span className="card__title-icon" style={{ background: 'rgba(27, 37, 89, 0.08)', color: 'var(--navy)' }}>
-                        ❤️
+                    <span className="card__title-icon" style={{ background: 'var(--navy-bg)', color: 'var(--navy)' }}>
+                        <span aria-hidden="true">❤️</span>
                     </span>
                     pLDDT Score
-                    <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 400 }}>ⓘ</span>
-                </div>
-                <div className="card__actions">
-                    <button className="card__action-btn" title="Calendar">📅</button>
-                    <button className="card__action-btn" title="More">⋮</button>
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 400 }} title="Predicted Local Distance Difference Test — per-residue confidence metric" aria-label="pLDDT info">ⓘ</span>
                 </div>
             </div>
 
@@ -118,17 +114,17 @@ export default function PldtMetrics({ plddtData, sequence }) {
 
                 {/* Sparkline chart */}
                 {chartData ? (
-                    <div className="plddt-metrics__chart">
+                    <div className="plddt-metrics__chart" role="img" aria-label={`Per-residue pLDDT chart. Average score: ${mean?.toFixed(1) ?? 'N/A'}`}>
                         <Line data={chartData} options={chartOptions} />
                     </div>
                 ) : (
                     <div className="plddt-metrics__chart" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-                        No data yet
+                        No data yet — run a prediction to see per-residue confidence
                     </div>
                 )}
 
                 <p className="plddt-metrics__desc">
-                    pLDDT is a per-residue confidence estimate (0-100). Scores above 90 indicate very high confidence; 70-90 suggests a generally reliable backbone prediction.
+                    pLDDT is a per-residue confidence estimate (0–100). Scores above 90 indicate very high confidence; 70–90 suggests a generally reliable backbone prediction.
                 </p>
             </div>
         </div>
