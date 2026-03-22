@@ -6,17 +6,15 @@ Endpoints:
   POST /api/predict   → accepts { sequence: str }, returns PDB + pLDDT data
 """
 
-import io
 import re
 import time
 import logging
 import tempfile
 import os
-import traceback
 
-from fastapi import FastAPI, HTTPException, Request, Depends
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, JSONResponse
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, field_validator
 import requests
 import numpy as np
@@ -62,8 +60,7 @@ if not SUPABASE_JWT_SECRET:
 # CORS — allow the Vite dev server and common local origins
 # ---------------------------------------------------------------------------
 ALLOWED_ORIGINS = os.getenv(
-    "CORS_ALLOWED_ORIGINS",
-    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
+    "CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000"
 ).split(",")
 
 app.add_middleware(
@@ -73,6 +70,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
 )
+
 
 # ---------------------------------------------------------------------------
 # Security headers middleware
@@ -89,11 +87,13 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
 
+
 # ---------------------------------------------------------------------------
 # JWT Authentication middleware
 # ---------------------------------------------------------------------------
 # Endpoints that do NOT require authentication
 PUBLIC_PATHS = {"/api/health", "/docs", "/openapi.json", "/redoc"}
+
 
 @app.middleware("http")
 async def authenticate_requests(request: Request, call_next):
@@ -137,6 +137,7 @@ async def authenticate_requests(request: Request, call_next):
 
     return await call_next(request)
 
+
 # ---------------------------------------------------------------------------
 # Request logging middleware
 # ---------------------------------------------------------------------------
@@ -154,10 +155,12 @@ async def log_requests(request: Request, call_next):
         logger.error("✖ %s %s  ERROR  %.0fms — %s", request.method, request.url.path, elapsed, exc)
         raise
 
+
 # ---------------------------------------------------------------------------
 # Models
 # ---------------------------------------------------------------------------
 VALID_AMINO_ACIDS = set(os.getenv("VALID_AMINO_ACIDS", "A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y").replace(",", ""))
+
 
 class PredictRequest(BaseModel):
     sequence: str = Field(..., min_length=10, max_length=2000, description="Amino-acid sequence (single letter codes)")
@@ -179,10 +182,10 @@ class PredictRequest(BaseModel):
 class PlddtData(BaseModel):
     mean: float
     per_residue: list[float]
-    very_high: float   # % residues with pLDDT > 90
-    confident: float   # % residues 70–90
-    low: float          # % residues 50–70
-    very_low: float     # % residues < 50
+    very_high: float  # % residues with pLDDT > 90
+    confident: float  # % residues 70–90
+    low: float  # % residues 50–70
+    very_low: float  # % residues < 50
 
 
 class PredictResponse(BaseModel):
@@ -194,6 +197,7 @@ class PredictResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
+
 
 @app.get("/api/health")
 async def health():
@@ -220,7 +224,10 @@ async def predict(request: Request, body: PredictRequest):
         logger.error("ESMAtlas API call failed: %s", exc)
         raise HTTPException(
             status_code=502,
-            detail=f"The protein structure prediction service (ESMAtlas) is currently unavailable. Please try again later. ({type(exc).__name__})"
+            detail=(
+                "The protein structure prediction service (ESMAtlas) is currently unavailable. "
+                f"Please try again later. ({type(exc).__name__})"
+            ),
         )
 
     pdb_string = resp.text
@@ -264,7 +271,12 @@ async def predict(request: Request, body: PredictRequest):
 
     except Exception as exc:
         logger.error("PDB parsing failed: %s", exc, exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Failed to parse the predicted structure. Please try a different sequence. ({type(exc).__name__})")
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Failed to parse the predicted structure. " f"Please try a different sequence. ({type(exc).__name__})"
+            ),
+        )
 
     return PredictResponse(
         pdb=pdb_string,
@@ -379,14 +391,16 @@ async def uniprot_search(
 
         organism_name = r.get("organism", {}).get("scientificName", "")
 
-        rows.append({
-            "accession": r.get("primaryAccession", ""),
-            "entryName": r.get("uniProtkbId", ""),
-            "proteinName": protein_name,
-            "geneName": gene_name,
-            "organism": organism_name,
-            "length": r.get("sequence", {}).get("length", 0),
-        })
+        rows.append(
+            {
+                "accession": r.get("primaryAccession", ""),
+                "entryName": r.get("uniProtkbId", ""),
+                "proteinName": protein_name,
+                "geneName": gene_name,
+                "organism": organism_name,
+                "length": r.get("sequence", {}).get("length", 0),
+            }
+        )
 
     return {"results": rows, "total": total, "page": page, "size": size}
 
@@ -479,4 +493,5 @@ async def analyze_protein(request: Request, body: AnalyzeRequest):
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

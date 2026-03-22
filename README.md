@@ -113,6 +113,26 @@ Navigate to [http://localhost:5173](http://localhost:5173) in your browser.
 
 *(Note: ESMFold prediction can take up to 2 minutes depending on the sequence length and server load.)*
 
+## 🧪 Testing and Code Quality
+
+Protly is equipped with comprehensive automated testing and static analysis for both the frontend and backend. 
+
+### Frontend Tests (Vitest & React Testing Library)
+```bash
+cd frontend
+npm run test       # Run unit and component tests
+npm run lint       # Run ESLint to catch bugs
+npm run format     # Run Prettier code formatting
+```
+
+### Backend Tests (Pytest & FastAPI TestClient)
+```bash
+cd backend
+pytest tests/      # Run all API and validation tests
+flake8 .           # Run static analysis
+black .            # Run PEP8 auto-formatter
+```
+
 ## 📡 API Reference
 
 | Method | Endpoint | Description |

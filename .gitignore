@@ -95,3 +95,14 @@ MANIFEST
 ehthumbs.db
 Thumbs.db
 github_tasks.md
+TESTSPRITE_GUIDE.md
+
+# AI & LLM Agents
+.gemini/
+
+# Testing Caches
+.pytest_cache/
+.mypy_cache/
+
+# Un-ignore the frontend lib folder which was caught by the Python lib/ rule
+!frontend/src/lib/

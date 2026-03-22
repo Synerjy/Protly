@@ -8,3 +8,8 @@ biopython
 python-jose[cryptography]
 python-dotenv
 supabase
+pytest
+pytest-asyncio
+httpx
+flake8
+black

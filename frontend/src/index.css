@@ -4,35 +4,35 @@
 
 :root {
   /* ---- Brand Palette ---- */
-  --navy: #1B2559;
-  --navy-light: #2D3A6E;
+  --navy: #1b2559;
+  --navy-light: #2d3a6e;
   --navy-dark: #111940;
-  --accent: #4A6CF7;
-  --accent-hover: #3B5DE7;
+  --accent: #4a6cf7;
+  --accent-hover: #3b5de7;
   --accent-glow: rgba(74, 108, 247, 0.15);
 
   /* ---- Neutrals ---- */
-  --bg: #F4F7FE;
-  --surface: #FFFFFF;
-  --border: #E9EDF7;
-  --text-primary: #1B2559;
-  --text-secondary: #8F9BBA;
-  --text-muted: #A3AED0;
+  --bg: #f4f7fe;
+  --surface: #ffffff;
+  --border: #e9edf7;
+  --text-primary: #1b2559;
+  --text-secondary: #8f9bba;
+  --text-muted: #a3aed0;
 
   /* ---- pLDDT Confidence Colors ---- */
-  --plddt-very-high: #0053D6;
+  --plddt-very-high: #0053d6;
   /* > 90 */
-  --plddt-confident: #65CBF3;
+  --plddt-confident: #65cbf3;
   /* 70-90 */
-  --plddt-low: #FFDB13;
+  --plddt-low: #ffdb13;
   /* 50-70 */
-  --plddt-very-low: #FF7D45;
+  --plddt-very-low: #ff7d45;
   /* < 50 */
 
   /* ---- Status ---- */
-  --success: #05CD99;
-  --warning: #FFB547;
-  --error: #EE5D50;
+  --success: #05cd99;
+  --warning: #ffb547;
+  --error: #ee5d50;
 
   /* ---- Spacing ---- */
   --space-xs: 4px;
@@ -152,7 +152,7 @@ textarea {
 .sidebar__logo {
   width: 42px;
   height: 42px;
-  background: linear-gradient(135deg, var(--accent), #7C3AED);
+  background: linear-gradient(135deg, var(--accent), #7c3aed);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -218,7 +218,7 @@ textarea {
   width: 38px;
   height: 38px;
   border-radius: var(--radius-full);
-  background: linear-gradient(135deg, #4A6CF7, #7C3AED);
+  background: linear-gradient(135deg, #4a6cf7, #7c3aed);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -440,7 +440,6 @@ textarea {
   grid-template-columns: 5fr 4fr;
   gap: var(--space-lg);
   flex: 1;
-
 }
 
 /* --- Cards --- */
@@ -528,7 +527,7 @@ textarea {
 .mol-viewer__container {
   width: 100%;
   height: 380px;
-  background: linear-gradient(180deg, #F8FAFF 0%, #FFFFFF 100%);
+  background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%);
   position: relative;
 }
 
@@ -973,7 +972,7 @@ textarea {
 .gene-info__progress-fill {
   height: 100%;
   border-radius: var(--radius-full);
-  background: linear-gradient(90deg, var(--accent), #FF6B35);
+  background: linear-gradient(90deg, var(--accent), #ff6b35);
   transition: width 0.6s ease;
 }
 
@@ -1088,7 +1087,6 @@ textarea {
 }
 
 @keyframes pulse {
-
   0%,
   100% {
     opacity: 1;
@@ -1196,7 +1194,9 @@ textarea {
 
 .search-panel__bar--focused {
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px var(--accent-glow), var(--shadow-hover);
+  box-shadow:
+    0 0 0 4px var(--accent-glow),
+    var(--shadow-hover);
 }
 
 .search-panel__bar-icon {
@@ -1696,7 +1696,9 @@ textarea {
   background: var(--bg);
   border-radius: var(--radius-md);
   text-align: center;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .lab-readiness__tile:hover {
@@ -1732,7 +1734,7 @@ textarea {
    ============================================================ */
 
 .skeleton {
-  background: linear-gradient(90deg, var(--border) 25%, #E4E8F4 50%, var(--border) 75%);
+  background: linear-gradient(90deg, var(--border) 25%, #e4e8f4 50%, var(--border) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: var(--radius-sm);
@@ -1919,7 +1921,7 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0F1629 0%, #1B2559 50%, #2D1B69 100%);
+  background: linear-gradient(135deg, #0f1629 0%, #1b2559 50%, #2d1b69 100%);
   position: relative;
   overflow: hidden;
   padding: var(--space-lg);
@@ -1952,7 +1954,7 @@ textarea {
 .login-page__orb--2 {
   width: 300px;
   height: 300px;
-  background: #7C3AED;
+  background: #7c3aed;
   bottom: -80px;
   left: -60px;
   animation-delay: -3s;
@@ -1961,7 +1963,7 @@ textarea {
 .login-page__orb--3 {
   width: 200px;
   height: 200px;
-  background: #05CD99;
+  background: #05cd99;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -1970,10 +1972,19 @@ textarea {
 }
 
 @keyframes orbFloat {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  25% { transform: translate(30px, -20px) scale(1.05); }
-  50% { transform: translate(-20px, 30px) scale(0.95); }
-  75% { transform: translate(20px, 20px) scale(1.02); }
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(30px, -20px) scale(1.05);
+  }
+  50% {
+    transform: translate(-20px, 30px) scale(0.95);
+  }
+  75% {
+    transform: translate(20px, 20px) scale(1.02);
+  }
 }
 
 .login-card {
@@ -1992,8 +2003,14 @@ textarea {
 }
 
 @keyframes loginSlideUp {
-  from { opacity: 0; transform: translateY(24px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .login-card__logo {
@@ -2007,7 +2024,7 @@ textarea {
 .login-card__logo-icon {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, var(--accent), #7C3AED);
+  background: linear-gradient(135deg, var(--accent), #7c3aed);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -2195,8 +2212,14 @@ textarea {
 }
 
 @keyframes popupFadeIn {
-  from { opacity: 0; transform: translateX(-4px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .sidebar__user-popup-header {
@@ -2296,8 +2319,14 @@ textarea {
 }
 
 @keyframes dropdownFadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .topbar__dropdown-header {
