@@ -83,82 +83,88 @@ export default function App() {
   }, []);
 
   // ---- predict (existing flow) ----
-  const handlePredict = useCallback(async (overrideSequence) => {
-    const seq = overrideSequence || sequence;
-    if (!seq.trim() || seq.trim().length < 10) return;
+  const handlePredict = useCallback(
+    async (overrideSequence) => {
+      const seq = overrideSequence || sequence;
+      if (!seq.trim() || seq.trim().length < 10) return;
 
-    setStatus('processing');
-    setError(null);
-    setPdbData(null);
-    setPlddtData(null);
+      setStatus('processing');
+      setError(null);
+      setPdbData(null);
+      setPlddtData(null);
 
-    try {
-      const res = await fetch(`${API_BASE}/api/predict`, {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({ sequence: seq.trim() }),
-      });
+      try {
+        const res = await fetch(`${API_BASE}/api/predict`, {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ sequence: seq.trim() }),
+        });
 
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
-        throw new Error(errBody.detail || `Server error ${res.status}`);
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          throw new Error(errBody.detail || `Server error ${res.status}`);
+        }
+
+        const data = await res.json();
+        setPdbData(data.pdb);
+        setPlddtData(data.plddt);
+        setSeqLength(data.sequence_length);
+        setStatus('complete');
+      } catch (err) {
+        console.error(err);
+        setError(err.message);
+        setStatus('error');
+        addToast('error', err.message);
       }
-
-      const data = await res.json();
-      setPdbData(data.pdb);
-      setPlddtData(data.plddt);
-      setSeqLength(data.sequence_length);
-      setStatus('complete');
-    } catch (err) {
-      console.error(err);
-      setError(err.message);
-      setStatus('error');
-      addToast('error', err.message);
-    }
-  }, [sequence, addToast, authHeaders]);
+    },
+    [sequence, addToast, authHeaders]
+  );
 
   // ---- UniProt search ----
-  const handleSearch = useCallback(async (query, page = 0) => {
-    if (!query.trim()) return;
+  const handleSearch = useCallback(
+    async (query, page = 0) => {
+      if (!query.trim()) return;
 
-    setView('discovery');
-    setSearchLoading(true);
-    setSearchQuery(query);
-    setCurrentPage(page);
-    setHasSearched(true);
-    lastSearchRef.current = { query, filters: { ...filters } };
+      setView('discovery');
+      setSearchLoading(true);
+      setSearchQuery(query);
+      setCurrentPage(page);
+      setHasSearched(true);
+      lastSearchRef.current = { query, filters: { ...filters } };
 
-    try {
-      const params = new URLSearchParams({
-        query: query.trim(),
-        reviewed: filters.reviewed.toString(),
-        organism: filters.organism,
-        length_min: '1',
-        length_max: filters.lengthMax.toString(),
-        page: page.toString(),
-        size: '25',
-      });
+      try {
+        const params = new URLSearchParams({
+          query: query.trim(),
+          reviewed: filters.reviewed.toString(),
+          organism: filters.organism,
+          length_min: '1',
+          length_max: filters.lengthMax.toString(),
+          page: page.toString(),
+          size: '25',
+        });
 
-      const res = await fetch(`${API_BASE}/api/uniprot/search?${params}`, {
-        headers: authHeaders(),
-      });
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
-        throw new Error(errBody.detail || `Search failed: ${res.status}`);
+        const res = await fetch(`${API_BASE}/api/uniprot/search?${params}`, {
+          headers: authHeaders(),
+        });
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          throw new Error(errBody.detail || `Search failed: ${res.status}`);
+        }
+
+        const data = await res.json();
+        setSearchResults(data.results);
+        setTotalResults(data.total);
+      } catch (err) {
+        console.error(err);
+        addToast('error', `Search failed: ${err.message}`);
+        setSearchResults([]);
+        setTotalResults(0);
+      } finally {
+        setSearchLoading(false);
       }
-
-      const data = await res.json();
-      setSearchResults(data.results);
-      setTotalResults(data.total);
-    } catch (err) {
-      console.error(err);
-      addToast('error', `Search failed: ${err.message}`);
-      setSearchResults([]);
-      setTotalResults(0);
-    } finally {
-      setSearchLoading(false);
-    }
-  }, [filters, addToast, authHeaders]);
+    },
+    [filters, addToast, authHeaders]
+  );
 
   const handleFiltersChange = useCallback((updater) => {
     if (typeof updater === 'function') {
@@ -169,80 +175,89 @@ export default function App() {
   }, []);
 
   // ---- page change ----
-  const handlePageChange = useCallback((newPage) => {
-    handleSearch(searchQuery, newPage);
-  }, [searchQuery, handleSearch]);
+  const handlePageChange = useCallback(
+    (newPage) => {
+      handleSearch(searchQuery, newPage);
+    },
+    [searchQuery, handleSearch]
+  );
 
   // ---- Analyze a protein from the table ----
-  const handleAnalyze = useCallback(async (accession) => {
-    setView('analysis');
-    setStatus('processing');
-    setLabLoading(true);
-    setLabMetrics(null);
-    setPdbData(null);
-    setPlddtData(null);
-    setSelectedProtein(null);
-    setError(null);
+  const handleAnalyze = useCallback(
+    async (accession) => {
+      setView('analysis');
+      setStatus('processing');
+      setLabLoading(true);
+      setLabMetrics(null);
+      setPdbData(null);
+      setPlddtData(null);
+      setSelectedProtein(null);
+      setError(null);
 
-    try {
-      const entryRes = await fetch(`${API_BASE}/api/uniprot/entry/${accession}`, {
-        headers: authHeaders(),
-      });
-      if (!entryRes.ok) {
-        const errBody = await entryRes.json().catch(() => ({}));
-        throw new Error(errBody.detail || `Failed to fetch entry: ${entryRes.status}`);
-      }
-      const protein = await entryRes.json();
-      setSelectedProtein(protein);
-      setSequence(protein.sequence);
-      setSeqLength(protein.length);
+      try {
+        const entryRes = await fetch(`${API_BASE}/api/uniprot/entry/${accession}`, {
+          headers: authHeaders(),
+        });
+        if (!entryRes.ok) {
+          const errBody = await entryRes.json().catch(() => ({}));
+          throw new Error(errBody.detail || `Failed to fetch entry: ${entryRes.status}`);
+        }
+        const protein = await entryRes.json();
+        setSelectedProtein(protein);
+        setSequence(protein.sequence);
+        setSeqLength(protein.length);
 
-      if (protein.sequence.length > 2000) {
-        addToast('error', `Sequence is ${protein.sequence.length} AA — exceeds the 2000 AA limit for ESMFold. Structure prediction skipped.`);
-        setStatus('error');
-        setError('Sequence too long for ESMFold (max 2000 AA)');
+        if (protein.sequence.length > 2000) {
+          addToast(
+            'error',
+            `Sequence is ${protein.sequence.length} AA — exceeds the 2000 AA limit for ESMFold. Structure prediction skipped.`
+          );
+          setStatus('error');
+          setError('Sequence too long for ESMFold (max 2000 AA)');
+          setLabLoading(false);
+          return;
+        }
+
+        const [predictRes, analyzeRes] = await Promise.all([
+          fetch(`${API_BASE}/api/predict`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ sequence: protein.sequence }),
+          }),
+          fetch(`${API_BASE}/api/analyze`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ sequence: protein.sequence }),
+          }),
+        ]);
+
+        if (analyzeRes.ok) {
+          const labData = await analyzeRes.json();
+          setLabMetrics(labData);
+        } else {
+          addToast('warning', 'Lab readiness analysis failed');
+        }
         setLabLoading(false);
-        return;
-      }
 
-      const [predictRes, analyzeRes] = await Promise.all([
-        fetch(`${API_BASE}/api/predict`, {
-          method: 'POST',
-          headers: authHeaders(),
-          body: JSON.stringify({ sequence: protein.sequence }),
-        }),
-        fetch(`${API_BASE}/api/analyze`, {
-          method: 'POST',
-          headers: authHeaders(),
-          body: JSON.stringify({ sequence: protein.sequence }),
-        }),
-      ]);
-
-      if (analyzeRes.ok) {
-        const labData = await analyzeRes.json();
-        setLabMetrics(labData);
-      } else {
-        addToast('warning', 'Lab readiness analysis failed');
+        if (!predictRes.ok) {
+          const errBody = await predictRes.json().catch(() => ({}));
+          throw new Error(errBody.detail || `Prediction failed: ${predictRes.status}`);
+        }
+        const predictData = await predictRes.json();
+        setPdbData(predictData.pdb);
+        setPlddtData(predictData.plddt);
+        setSeqLength(predictData.sequence_length);
+        setStatus('complete');
+      } catch (err) {
+        console.error(err);
+        setError(err.message);
+        setStatus('error');
+        setLabLoading(false);
+        addToast('error', err.message);
       }
-      setLabLoading(false);
-
-      if (!predictRes.ok) {
-        const errBody = await predictRes.json().catch(() => ({}));
-        throw new Error(errBody.detail || `Prediction failed: ${predictRes.status}`);
-      }
-      const predictData = await predictRes.json();
-      setPdbData(predictData.pdb);
-      setPlddtData(predictData.plddt);
-      setSeqLength(predictData.sequence_length);
-      setStatus('complete');
-    } catch (err) {
-      console.error(err);
-      setError(err.message);
-      setStatus('error');
-      setLabLoading(false);
-      addToast('error', err.message);
-    }
-  }, [addToast, authHeaders]);
+    },
+    [addToast, authHeaders]
+  );
 
   // ---- navigation ----
   const handleBackToSearch = useCallback(() => {
@@ -278,7 +293,10 @@ export default function App() {
           <div className="login-page__orb login-page__orb--2" />
         </div>
         <div style={{ textAlign: 'center', zIndex: 2 }}>
-          <div className="spinner spinner--dark" style={{ width: 32, height: 32, margin: '0 auto 16px' }} />
+          <div
+            className="spinner spinner--dark"
+            style={{ width: 32, height: 32, margin: '0 auto 16px' }}
+          />
           <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Loading Protly…</p>
         </div>
       </div>
@@ -292,12 +310,7 @@ export default function App() {
 
   return (
     <div className="app-layout">
-      <Sidebar
-        activeView={view}
-        onViewChange={handleViewChange}
-        user={user}
-        onSignOut={signOut}
-      />
+      <Sidebar activeView={view} onViewChange={handleViewChange} user={user} onSignOut={signOut} />
 
       <div className="main-wrapper">
         <TopBar
@@ -361,7 +374,13 @@ export default function App() {
                   status={status}
                 />
                 <PldtMetrics plddtData={plddtData} sequence={sequence} />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-lg)' }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 'var(--space-lg)',
+                  }}
+                >
                   <ProteinMetrics plddtData={plddtData} seqLength={seqLength} />
                   <GeneInfo status={status} />
                 </div>
@@ -438,7 +457,13 @@ export default function App() {
                 <ProteinBio protein={selectedProtein} />
                 <LabReadiness metrics={labMetrics} isLoading={labLoading} />
                 <PldtMetrics plddtData={plddtData} sequence={sequence} />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-lg)' }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 'var(--space-lg)',
+                  }}
+                >
                   <ProteinMetrics plddtData={plddtData} seqLength={seqLength} />
                   <ActionsCard
                     pdbData={pdbData}
