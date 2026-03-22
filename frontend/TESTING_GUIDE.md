@@ -15,16 +15,19 @@ We use the modern Vite testing ecosystem:
 ## How to Run the Tests
 
 To run the entire test suite once:
+
 ```bash
 npm run test
 ```
 
 To run tests in **Watch Mode** (automatically re-runs tests when you save a file):
+
 ```bash
 npm run test:watch
 ```
 
 To enforce code style alongside your tests:
+
 ```bash
 npm run lint      # Checks for code issues
 npm run format    # Auto-formats code with Prettier
@@ -46,19 +49,13 @@ import userEvent from '@testing-library/user-event';
 import SequenceInput from '../components/SequenceInput';
 
 describe('SequenceInput Component', () => {
-
   // 1. Testing simple rendering
   it('renders correctly', () => {
     // Render the component with some mock props
     render(
-      <SequenceInput 
-        sequence="" 
-        setSequence={() => {}} 
-        onPredict={() => {}} 
-        status="ready" 
-      />
+      <SequenceInput sequence="" setSequence={() => {}} onPredict={() => {}} status="ready" />
     );
-    
+
     // Check if what the user sees is on screen
     expect(screen.getByPlaceholderText(/Paste your amino-acid sequence/i)).toBeInTheDocument();
   });
@@ -69,18 +66,18 @@ describe('SequenceInput Component', () => {
     const user = userEvent.setup(); // Setup user interaction
 
     render(
-      <SequenceInput 
-        sequence="ARNDCQEGHILKMFPSTWYV" 
-        setSequence={() => {}} 
-        onPredict={mockPredict} 
-        status="ready" 
+      <SequenceInput
+        sequence="ARNDCQEGHILKMFPSTWYV"
+        setSequence={() => {}}
+        onPredict={mockPredict}
+        status="ready"
       />
     );
-    
+
     // Find the button and click it
     const btn = screen.getByRole('button', { name: /Predict/i });
     await user.click(btn);
-    
+
     // Assert the function was called!
     expect(mockPredict).toHaveBeenCalled();
   });
@@ -88,5 +85,6 @@ describe('SequenceInput Component', () => {
 ```
 
 ### Best Practices
+
 - **Query by Accessibility**: Prefer `getByRole`, `getByLabelText`, and `getByText`. Avoid querying by CSS classes, as tests should test functionality, not DOM structure.
 - **Mock External Hooks**: If your component relies on global states (like `useAuth`), mock the hook using `vi.spyOn(AuthProvider, 'useAuth')` so you can test the component in isolation.
