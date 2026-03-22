@@ -47,7 +47,7 @@ export default function TopBar({
   return (
     <header className="topbar">
       <div className="topbar__left">
-        <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--navy)', letterSpacing: -0.5 }}>
+        <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: -0.5 }}>
           Protly<span style={{ color: 'var(--accent)' }}>.</span>
         </span>
 
@@ -123,6 +123,7 @@ export default function TopBar({
                 className="topbar__search-clear"
                 onClick={() => setSearchQuery('')}
                 title="Clear search"
+                aria-label="Clear search"
               >
                 ✕
               </button>
@@ -130,7 +131,7 @@ export default function TopBar({
           </div>
         )}
 
-        <button className="topbar__icon-btn" title="Notifications" id="notifications-btn">
+        <button className="topbar__icon-btn" title="Notifications" aria-label="Notifications" id="notifications-btn">
           <svg
             width="18"
             height="18"
@@ -152,6 +153,7 @@ export default function TopBar({
             className="topbar__user-btn"
             onClick={() => setShowUserMenu(!showUserMenu)}
             title={displayName}
+            aria-label="User menu"
             id="topbar-user-btn"
           >
             {avatarUrl ? (

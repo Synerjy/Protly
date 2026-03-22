@@ -24,6 +24,7 @@ export default function Sidebar({ activeView, onViewChange, user, onSignOut }) {
         <button
           className={`sidebar__nav-item${activeView === 'dashboard' ? ' sidebar__nav-item--active' : ''}`}
           title="Dashboard"
+          aria-label="Dashboard"
           onClick={() => onViewChange('dashboard')}
         >
           <svg
@@ -45,6 +46,7 @@ export default function Sidebar({ activeView, onViewChange, user, onSignOut }) {
         <button
           className={`sidebar__nav-item${activeView === 'discovery' || activeView === 'analysis' ? ' sidebar__nav-item--active' : ''}`}
           title="Search & Discovery"
+          aria-label="Search and Discovery"
           onClick={() => onViewChange('discovery')}
         >
           <svg
@@ -61,7 +63,7 @@ export default function Sidebar({ activeView, onViewChange, user, onSignOut }) {
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
         </button>
-        <button className="sidebar__nav-item" title="History">
+        <button className="sidebar__nav-item" title="History" aria-label="History">
           <svg
             width="20"
             height="20"
@@ -76,7 +78,7 @@ export default function Sidebar({ activeView, onViewChange, user, onSignOut }) {
             <polyline points="12 6 12 12 16 14" />
           </svg>
         </button>
-        <button className="sidebar__nav-item" title="Taxonomy">
+        <button className="sidebar__nav-item" title="Taxonomy" aria-label="Taxonomy">
           <svg
             width="20"
             height="20"
@@ -92,7 +94,7 @@ export default function Sidebar({ activeView, onViewChange, user, onSignOut }) {
             <path d="M2 12l10 5 10-5" />
           </svg>
         </button>
-        <button className="sidebar__nav-item" title="Settings">
+        <button className="sidebar__nav-item" title="Settings" aria-label="Settings">
           <svg
             width="20"
             height="20"
@@ -110,7 +112,7 @@ export default function Sidebar({ activeView, onViewChange, user, onSignOut }) {
       </nav>
 
       <div className="sidebar__bottom">
-        <button className="sidebar__nav-item" title="Help">
+        <button className="sidebar__nav-item" title="Help" aria-label="Help">
           <svg
             width="20"
             height="20"
@@ -131,6 +133,7 @@ export default function Sidebar({ activeView, onViewChange, user, onSignOut }) {
           <button
             className="sidebar__avatar-btn"
             title={user?.user_metadata?.full_name || user?.email || 'User'}
+            aria-label="User menu"
             onClick={() => setShowMenu(!showMenu)}
             id="sidebar-user-btn"
           >
