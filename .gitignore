@@ -104,6 +104,5 @@ TESTSPRITE_GUIDE.md
 .pytest_cache/
 .mypy_cache/
 
-# TestSprite 
-testsprite/
-protly_openapi.json
+# Un-ignore the frontend lib folder which was caught by the Python lib/ rule
+!frontend/src/lib/
