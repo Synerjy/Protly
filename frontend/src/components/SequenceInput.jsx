@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, memo } from 'react';
 
 const defaultAminoAcids = 'A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y';
 const aminoAcidsStr = (import.meta.env.VITE_VALID_AMINO_ACIDS || defaultAminoAcids).replace(
@@ -7,19 +7,32 @@ const aminoAcidsStr = (import.meta.env.VITE_VALID_AMINO_ACIDS || defaultAminoAci
 );
 const VALID_AMINO_ACIDS = new Set(aminoAcidsStr.split(''));
 
-export default function SequenceInput({ sequence, setSequence, onPredict, status }) {
+const SequenceInput = memo(function SequenceInput({ sequence: externalSeq, setSequence: setExternalSeq, onPredict, status }) {
+  const [localSeq, setLocalSeq] = useState(externalSeq || '');
+  const [prevExternalSeq, setPrevExternalSeq] = useState(externalSeq);
+
+  if (externalSeq !== prevExternalSeq) {
+    setPrevExternalSeq(externalSeq);
+    setLocalSeq(externalSeq || '');
+  }
+
   const isLoading = status === 'processing';
-  const charCount = sequence.trim().length;
+  const charCount = localSeq.trim().length;
 
   const invalidChars = useMemo(() => {
     const bad = new Set();
-    for (const ch of sequence) {
+    for (const ch of localSeq) {
       if (!VALID_AMINO_ACIDS.has(ch)) bad.add(ch);
     }
     return [...bad].sort();
-  }, [sequence]);
+  }, [localSeq]);
 
   const hasInvalid = invalidChars.length > 0;
+
+  const handlePredictClicked = () => {
+    setExternalSeq(localSeq);
+    onPredict(localSeq);
+  };
 
   return (
     <div className="card" id="sequence-input-card">
@@ -40,7 +53,7 @@ export default function SequenceInput({ sequence, setSequence, onPredict, status
             onClick={async () => {
               try {
                 const text = await navigator.clipboard.readText();
-                if (text) setSequence(text.toUpperCase().replace(/[^A-Z]/g, ''));
+                if (text) setLocalSeq(text.toUpperCase().replace(/[^A-Z]/g, ''));
               } catch {
                 /* clipboard permission denied */
               }
@@ -60,7 +73,7 @@ export default function SequenceInput({ sequence, setSequence, onPredict, status
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
             </svg>
           </button>
-          <button className="card__action-btn" title="Clear" onClick={() => setSequence('')}>
+          <button className="card__action-btn" title="Clear" onClick={() => setLocalSeq('')}>
             ✕
           </button>
         </div>
@@ -71,8 +84,8 @@ export default function SequenceInput({ sequence, setSequence, onPredict, status
           id="sequence-textarea"
           className="sequence-input__textarea"
           placeholder="Paste your amino-acid sequence here (single letter codes: A, C, D, E, F, G, H, I, K, L, M, N, P, Q, R, S, T, V, W, Y)…"
-          value={sequence}
-          onChange={(e) => setSequence(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))}
+          value={localSeq}
+          onChange={(e) => setLocalSeq(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))}
           spellCheck={false}
           style={hasInvalid ? { borderColor: 'var(--warning)' } : undefined}
         />
@@ -104,7 +117,7 @@ export default function SequenceInput({ sequence, setSequence, onPredict, status
           <button
             id="predict-btn"
             className="sequence-input__predict-btn"
-            onClick={onPredict}
+            onClick={handlePredictClicked}
             disabled={isLoading || charCount < 10 || hasInvalid}
           >
             {isLoading ? (
@@ -134,4 +147,6 @@ export default function SequenceInput({ sequence, setSequence, onPredict, status
       </div>
     </div>
   );
-}
+});
+
+export default SequenceInput;

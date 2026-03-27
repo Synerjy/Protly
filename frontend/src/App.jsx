@@ -312,7 +312,7 @@ export default function App() {
     <div className="app-layout">
       <Sidebar activeView={view} onViewChange={handleViewChange} user={user} onSignOut={signOut} />
 
-      <div className="main-wrapper">
+      <main className="main-wrapper">
         <TopBar
           onSearch={handleSearch}
           searchQuery={searchQuery}
@@ -325,52 +325,42 @@ export default function App() {
 
         {/* ========== DASHBOARD VIEW ========== */}
         {view === 'dashboard' && (
-          <>
-            <div className="page-header">
-              <div className="page-header__row">
-                <div>
-                  <h1>Overview</h1>
-                  <h2>Protein Structure</h2>
-                </div>
-                <div className="page-header__actions">
-                  <div className="page-header__date">
-                    <span>🕐</span>
-                    <span>24H</span>
-                    <span style={{ marginLeft: 8 }}>📅</span>
-                    <span>
-                      {new Date().toLocaleDateString('en-US', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })}
-                    </span>
-                  </div>
-                  <button
-                    className="btn btn--primary"
-                    onClick={() => handlePredict()}
-                    disabled={status === 'processing'}
-                  >
-                    Prediction Request
-                    <span style={{ fontSize: 18 }}>→</span>
-                  </button>
-                </div>
+          <div className="dashboard-grid">
+            <div className="left-column">
+              <div className="mol-viewer-card">
+                <MolViewer pdbData={pdbData} status={status} />
+                <PredictionStatus status={status} error={error} />
+                <ConfidenceBar plddtData={plddtData} />
               </div>
             </div>
 
-            <div className="dashboard-grid">
-              <div className="left-column">
-                <div className="mol-viewer-card">
-                  <MolViewer pdbData={pdbData} status={status} />
-                  <PredictionStatus status={status} error={error} />
-                  <ConfidenceBar plddtData={plddtData} />
+            <div className="right-column">
+              <div className="page-header">
+                <div className="page-header__row">
+                  <div>
+                    <h1>Overview</h1>
+                    <h2>Protein Structure</h2>
+                  </div>
+                  <div className="page-header__actions">
+                    <div className="page-header__date">
+                      <span>🕐</span>
+                      <span>24H</span>
+                      <span style={{ marginLeft: 8 }}>📅</span>
+                      <span>
+                        {new Date().toLocaleDateString('en-US', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              <div className="right-column">
                 <SequenceInput
                   sequence={sequence}
                   setSequence={setSequence}
-                  onPredict={() => handlePredict()}
+                  onPredict={handlePredict}
                   status={status}
                 />
                 <PldtMetrics plddtData={plddtData} sequence={sequence} />
@@ -392,7 +382,6 @@ export default function App() {
                 />
               </div>
             </div>
-          </>
         )}
 
         {/* ========== DISCOVERY VIEW ========== */}
@@ -425,35 +414,33 @@ export default function App() {
 
         {/* ========== ANALYSIS VIEW ========== */}
         {view === 'analysis' && (
-          <>
-            <div className="page-header">
-              <div className="page-header__row">
-                <div>
-                  <h1>{selectedProtein?.proteinName || 'Analyzing Protein…'}</h1>
-                  <h2>
-                    {selectedProtein
-                      ? `${selectedProtein.accession} · ${selectedProtein.organism}`
-                      : 'Fetching protein data…'}
-                  </h2>
-                </div>
-                <div className="page-header__actions">
-                  <button className="btn btn--ghost" onClick={handleBackToSearch}>
-                    ← Back to Results
-                  </button>
-                </div>
+          <div className="dashboard-grid">
+            <div className="left-column">
+              <div className="mol-viewer-card">
+                <MolViewer pdbData={pdbData} status={status} />
+                <PredictionStatus status={status} error={error} />
+                <ConfidenceBar plddtData={plddtData} />
               </div>
             </div>
 
-            <div className="dashboard-grid">
-              <div className="left-column">
-                <div className="mol-viewer-card">
-                  <MolViewer pdbData={pdbData} status={status} />
-                  <PredictionStatus status={status} error={error} />
-                  <ConfidenceBar plddtData={plddtData} />
+            <div className="right-column">
+              <div className="page-header">
+                <div className="page-header__row">
+                  <div>
+                    <h1>{selectedProtein?.proteinName || 'Analyzing Protein…'}</h1>
+                    <h2>
+                      {selectedProtein
+                        ? `${selectedProtein.accession} · ${selectedProtein.organism}`
+                        : 'Fetching protein data…'}
+                    </h2>
+                  </div>
+                  <div className="page-header__actions">
+                    <button className="btn btn--ghost" onClick={handleBackToSearch}>
+                      ← Back to Results
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              <div className="right-column">
                 <ProteinBio protein={selectedProtein} />
                 <LabReadiness metrics={labMetrics} isLoading={labLoading} />
                 <PldtMetrics plddtData={plddtData} sequence={sequence} />
@@ -474,9 +461,8 @@ export default function App() {
                 </div>
               </div>
             </div>
-          </>
         )}
-      </div>
+      </main>
 
       <Toast toasts={toasts} onDismiss={dismissToast} />
     </div>
