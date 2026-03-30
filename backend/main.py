@@ -471,13 +471,15 @@ async def uniprot_entry(request: Request, accession: str):
                 orientation = orientation_obj.get("value", "") if orientation_obj else ""
 
                 if loc_value:
-                    subcellular_locations.append({
-                        "location": loc_value,
-                        "id": loc_id,
-                        "topology": topology,
-                        "orientation": orientation,
-                        "note": block_note,
-                    })
+                    subcellular_locations.append(
+                        {
+                            "location": loc_value,
+                            "id": loc_id,
+                            "topology": topology,
+                            "orientation": orientation,
+                            "note": block_note,
+                        }
+                    )
 
     # Sequence
     seq = data.get("sequence", {}).get("value", "")

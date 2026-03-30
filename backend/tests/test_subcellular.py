@@ -5,7 +5,6 @@ Tests for the /api/uniprot/entry/{accession} endpoint which provides
 subcellular localization data (and other metadata) for the analysis view.
 """
 
-import json
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 import main
@@ -19,6 +18,7 @@ client = TestClient(main.app)
 # ---------------------------------------------------------------------------
 # Helpers — build mock UniProt REST API payloads
 # ---------------------------------------------------------------------------
+
 
 def _make_uniprot_entry(
     accession="P12345",
@@ -59,11 +59,7 @@ def _make_uniprot_entry(
     return {
         "primaryAccession": accession,
         "uniProtkbId": f"{gene_name}_HUMAN",
-        "proteinDescription": {
-            "recommendedName": {
-                "fullName": {"value": protein_name}
-            }
-        },
+        "proteinDescription": {"recommendedName": {"fullName": {"value": protein_name}}},
         "genes": [{"geneName": {"value": gene_name}}],
         "organism": {"scientificName": organism},
         "sequence": {"value": sequence, "length": len(sequence)},
@@ -74,6 +70,7 @@ def _make_uniprot_entry(
 # ---------------------------------------------------------------------------
 # Tests — happy path
 # ---------------------------------------------------------------------------
+
 
 @patch("main.requests.get")
 def test_entry_returns_protein_metadata(mock_get):
@@ -148,9 +145,7 @@ def test_entry_returns_function_text(mock_get):
     """Endpoint should extract FUNCTION comment text."""
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
-    mock_response.json.return_value = _make_uniprot_entry(
-        function_text="Involved in signal transduction."
-    )
+    mock_response.json.return_value = _make_uniprot_entry(function_text="Involved in signal transduction.")
     mock_get.return_value = mock_response
 
     resp = client.get("/api/uniprot/entry/P12345")
@@ -162,6 +157,7 @@ def test_entry_returns_function_text(mock_get):
 # ---------------------------------------------------------------------------
 # Tests — edge cases
 # ---------------------------------------------------------------------------
+
 
 @patch("main.requests.get")
 def test_entry_empty_subcellular_locations(mock_get):
@@ -185,9 +181,7 @@ def test_entry_empty_subcellular_locations(mock_get):
 def test_entry_submission_name_fallback(mock_get):
     """If there is no recommendedName, fall back to submissionNames."""
     payload = _make_uniprot_entry()
-    payload["proteinDescription"] = {
-        "submissionNames": [{"fullName": {"value": "Unreviewed Protein"}}]
-    }
+    payload["proteinDescription"] = {"submissionNames": [{"fullName": {"value": "Unreviewed Protein"}}]}
 
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
@@ -220,6 +214,7 @@ def test_entry_no_function_text(mock_get):
 # ---------------------------------------------------------------------------
 # Tests — failure modes
 # ---------------------------------------------------------------------------
+
 
 @patch("main.requests.get")
 def test_entry_upstream_failure_returns_502(mock_get):
