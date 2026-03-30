@@ -62,12 +62,7 @@ describe('SubcellularLocation Component', () => {
   });
 
   it('shows singular "location" label for a single entry', () => {
-    render(
-      <SubcellularLocation
-        locations={[SAMPLE_LOCATIONS[0]]}
-        isLoading={false}
-      />
-    );
+    render(<SubcellularLocation locations={[SAMPLE_LOCATIONS[0]]} isLoading={false} />);
     expect(screen.getByText('1 location')).toBeInTheDocument();
   });
 

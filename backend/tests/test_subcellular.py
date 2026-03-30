@@ -107,7 +107,7 @@ def test_entry_returns_subcellular_locations(mock_get):
     assert isinstance(locs, list)
     assert len(locs) == 2
 
-    location_names = [l["location"] for l in locs]
+    location_names = [loc["location"] for loc in locs]
     assert "Nucleus" in location_names
     assert "Cytoplasm" in location_names
 
