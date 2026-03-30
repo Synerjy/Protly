@@ -14,6 +14,7 @@ import ActionsCard from './components/ActionsCard';
 import DiscoveryTable from './components/DiscoveryTable';
 import ProteinBio from './components/ProteinBio';
 import LabReadiness from './components/LabReadiness';
+import SubcellularLocation from './components/SubcellularLocation';
 import SearchPanel from './components/SearchPanel';
 import Toast from './components/Toast';
 
@@ -455,6 +456,13 @@ export default function App() {
 
               <div className="right-column">
                 <ProteinBio protein={selectedProtein} />
+
+                {/* ── Subcellular Localization ── */}
+                <SubcellularLocation
+                  locations={selectedProtein?.subcellularLocations}
+                  isLoading={labLoading}
+                />
+
                 <LabReadiness metrics={labMetrics} isLoading={labLoading} />
                 <PldtMetrics plddtData={plddtData} sequence={sequence} />
                 <div

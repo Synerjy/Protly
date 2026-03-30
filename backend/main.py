@@ -408,7 +408,7 @@ async def uniprot_search(
 @app.get("/api/uniprot/entry/{accession}")
 @limiter.limit("30/minute")
 async def uniprot_entry(request: Request, accession: str):
-    """Fetch a full UniProt entry by accession (sequence + metadata)."""
+    """Fetch a full UniProt entry by accession (sequence + metadata + subcellular locations)."""
     try:
         resp = requests.get(
             f"{UNIPROT_BASE}/{accession}",
@@ -440,15 +440,44 @@ async def uniprot_entry(request: Request, accession: str):
     # Organism
     organism_name = data.get("organism", {}).get("scientificName", "")
 
-    # Function (cc_function)
+    # Parse comments — collect FUNCTION text and SUBCELLULAR LOCATION entries
     function_text = ""
+    subcellular_locations = []
     comments = data.get("comments", [])
+
     for c in comments:
-        if c.get("commentType") == "FUNCTION":
+        comment_type = c.get("commentType", "")
+
+        if comment_type == "FUNCTION" and not function_text:
             texts = c.get("texts", [])
             if texts:
                 function_text = texts[0].get("value", "")
-                break
+
+        elif comment_type == "SUBCELLULAR LOCATION":
+            # The note field contains any qualifier text for the whole block
+            note_obj = c.get("note", {})
+            note_texts = [t.get("value", "") for t in note_obj.get("texts", [])] if note_obj else []
+            block_note = note_texts[0] if note_texts else ""
+
+            for loc_entry in c.get("subcellularLocations", []):
+                loc = loc_entry.get("location", {})
+                loc_value = loc.get("value", "")
+                loc_id = loc.get("id", "")
+
+                topology_obj = loc_entry.get("topology")
+                topology = topology_obj.get("value", "") if topology_obj else ""
+
+                orientation_obj = loc_entry.get("orientation")
+                orientation = orientation_obj.get("value", "") if orientation_obj else ""
+
+                if loc_value:
+                    subcellular_locations.append({
+                        "location": loc_value,
+                        "id": loc_id,
+                        "topology": topology,
+                        "orientation": orientation,
+                        "note": block_note,
+                    })
 
     # Sequence
     seq = data.get("sequence", {}).get("value", "")
@@ -461,6 +490,7 @@ async def uniprot_entry(request: Request, accession: str):
         "geneName": gene_name,
         "organism": organism_name,
         "function": function_text,
+        "subcellularLocations": subcellular_locations,
         "sequence": seq,
         "length": length,
     }
