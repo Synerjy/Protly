@@ -4,20 +4,20 @@
 
 :root {
   /* ---- Brand Palette ---- */
-  --navy: #1b2559;
-  --navy-light: #2d3a6e;
-  --navy-dark: #111940;
-  --accent: #4a6cf7;
-  --accent-hover: #3b5de7;
-  --accent-glow: rgba(74, 108, 247, 0.15);
+  --navy: #0a0a0a;
+  --navy-light: #1a1a1a;
+  --navy-dark: #000000;
+  --accent: #ffb547;
+  --accent-hover: #e8a036;
+  --accent-glow: rgba(255, 181, 71, 0.15);
 
   /* ---- Neutrals ---- */
-  --bg: #f4f7fe;
-  --surface: #ffffff;
-  --border: #e9edf7;
-  --text-primary: #1b2559;
-  --text-secondary: #8f9bba;
-  --text-muted: #a3aed0;
+  --bg: #000000;
+  --surface: #0f0f0f;
+  --border: #222222;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #555555;
 
   /* ---- pLDDT Confidence Colors ---- */
   --plddt-very-high: #0053d6;
@@ -43,19 +43,20 @@
   --space-2xl: 48px;
 
   /* ---- Radius ---- */
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 24px;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 8px;
   --radius-full: 9999px;
 
   /* ---- Shadows ---- */
-  --shadow-card: 0 2px 12px rgba(27, 37, 89, 0.04);
-  --shadow-hover: 0 4px 24px rgba(27, 37, 89, 0.08);
-  --shadow-modal: 0 8px 40px rgba(27, 37, 89, 0.12);
+  --shadow-card: none;
+  --shadow-hover: none;
+  --shadow-modal: 0 8px 40px rgba(0, 0, 0, 0.8);
 
   /* ---- Type ---- */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
 }
 
 /* ---- Reset ---- */
@@ -152,16 +153,17 @@ textarea {
 .sidebar__logo {
   width: 42px;
   height: 42px;
-  background: linear-gradient(135deg, var(--accent), #7c3aed);
-  border-radius: var(--radius-md);
+  background: var(--navy-light);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--accent);
   font-weight: 800;
   font-size: 18px;
   margin-bottom: var(--space-2xl);
-  box-shadow: 0 4px 16px rgba(74, 108, 247, 0.3);
+  box-shadow: none;
 }
 
 .sidebar__nav {
@@ -217,12 +219,13 @@ textarea {
 .sidebar__avatar {
   width: 38px;
   height: 38px;
-  border-radius: var(--radius-full);
-  background: linear-gradient(135deg, #4a6cf7, #7c3aed);
+  border-radius: var(--radius-sm);
+  background: var(--navy-light);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: var(--accent);
   font-weight: 600;
   font-size: 14px;
 }
@@ -340,7 +343,7 @@ textarea {
 
 /* --- Header Area --- */
 .page-header {
-  padding: var(--space-xl) var(--space-xl) var(--space-md);
+  padding: 0 0 var(--space-lg);
 }
 
 .page-header__row {
@@ -354,7 +357,7 @@ textarea {
 .page-header h1 {
   font-size: 32px;
   font-weight: 800;
-  color: var(--navy);
+  color: var(--text-primary);
   letter-spacing: -0.5px;
 }
 
@@ -435,24 +438,42 @@ textarea {
 
 /* --- Main Grid --- */
 .dashboard-grid {
-  padding: 0 var(--space-xl) var(--space-xl);
-  display: grid;
-  grid-template-columns: 5fr 4fr;
-  gap: var(--space-lg);
+  display: flex;
   flex: 1;
+  height: calc(100vh - 73px); /* Exact height under topbar */
+  border-top: none; 
+}
+
+.left-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  min-width: 0;
+  background: var(--bg);
 }
 
 /* --- Cards --- */
 .card {
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
-  overflow: hidden;
-  transition: box-shadow 0.2s ease;
+  background: transparent;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+  transition: border-color 0.2s ease;
+  padding-bottom: var(--space-lg);
+  margin-bottom: var(--space-lg);
 }
 
 .card:hover {
-  box-shadow: var(--shadow-hover);
+  box-shadow: none;
+  border-color: var(--accent);
+}
+
+.card:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
 }
 
 .card__header {
@@ -513,21 +534,24 @@ textarea {
    MolViewer card
    ============================================================ */
 .mol-viewer-card {
+  flex: 1;
   position: relative;
-  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  border-radius: 0;
   overflow: hidden;
-  background: var(--surface);
-  box-shadow: var(--shadow-card);
+  background: #000;
+  box-shadow: none;
 }
 
 .mol-viewer-card:hover {
-  box-shadow: var(--shadow-hover);
+  box-shadow: none;
 }
 
 .mol-viewer__container {
+  flex: 1;
   width: 100%;
-  height: 380px;
-  background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%);
+  background: #000;
   position: relative;
 }
 
@@ -783,9 +807,11 @@ textarea {
    ============================================================ */
 
 .right-column {
+  width: clamp(520px, 40vw, 800px); /* Responsive but fixed-like width */
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  padding: var(--space-2xl) var(--space-xl);
+  overflow-y: auto;
 }
 
 /* --- Sequence Input --- */
@@ -797,7 +823,7 @@ textarea {
   border-radius: var(--radius-md);
   padding: var(--space-md);
   font-size: 12px;
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-mono);
   color: var(--text-primary);
   resize: vertical;
   transition: border-color 0.2s ease;
@@ -858,7 +884,7 @@ textarea {
 .plddt-metrics__score-value {
   font-size: 42px;
   font-weight: 800;
-  color: var(--navy);
+  color: var(--text-primary);
   line-height: 1;
 }
 
@@ -1157,7 +1183,7 @@ textarea {
 .search-panel__title {
   font-size: 36px;
   font-weight: 800;
-  color: var(--navy);
+  color: var(--text-primary);
   letter-spacing: -0.5px;
   margin-bottom: var(--space-sm);
   background: linear-gradient(135deg, var(--navy) 0%, var(--accent) 100%);
@@ -1484,7 +1510,7 @@ textarea {
 
 .discovery-table__gene {
   font-weight: 500;
-  color: var(--navy);
+  color: var(--text-primary);
 }
 
 .discovery-table__organism {
@@ -1540,7 +1566,7 @@ textarea {
 .discovery-table__empty h3 {
   font-size: 18px;
   font-weight: 700;
-  color: var(--navy);
+  color: var(--text-primary);
   margin-bottom: var(--space-sm);
 }
 
@@ -1601,7 +1627,7 @@ textarea {
 .protein-bio__name {
   font-size: 16px;
   font-weight: 700;
-  color: var(--navy);
+  color: var(--text-primary);
   margin-bottom: var(--space-md);
   line-height: 1.4;
 }
@@ -1715,7 +1741,7 @@ textarea {
 .lab-readiness__tile-value {
   font-size: 22px;
   font-weight: 700;
-  color: var(--navy);
+  color: var(--text-primary);
 }
 
 .lab-readiness__tile-tag {
@@ -2038,14 +2064,14 @@ textarea {
 .login-card__logo-text {
   font-size: 28px;
   font-weight: 800;
-  color: var(--navy);
+  color: var(--text-primary);
   letter-spacing: -0.5px;
 }
 
 .login-card__title {
   font-size: 28px;
   font-weight: 800;
-  color: var(--navy);
+  color: var(--text-primary);
   text-align: center;
   margin-bottom: var(--space-xs);
 }

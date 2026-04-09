@@ -85,7 +85,7 @@ export default function PldtMetrics({ plddtData, sequence }) {
         <div className="card__title">
           <span
             className="card__title-icon"
-            style={{ background: 'rgba(27, 37, 89, 0.08)', color: 'var(--navy)' }}
+            style={{ color: 'var(--accent)' }}
           >
             ❤️
           </span>
@@ -143,7 +143,7 @@ export default function PldtMetrics({ plddtData, sequence }) {
               padding: '2px 10px',
               fontWeight: 700,
               fontSize: 13,
-              color: 'var(--navy)',
+              color: 'var(--text-primary)',
             }}
           >
             {mean !== null ? mean.toFixed(2) : '—'}

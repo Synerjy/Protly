@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, memo } from 'react';
 
 const VIZ_STYLES = [
   { key: 'cartoon', label: 'Cartoon', icon: '🎨' },
@@ -7,7 +7,7 @@ const VIZ_STYLES = [
   { key: 'surface', label: 'Surface', icon: '◐' },
 ];
 
-export default function MolViewer({ pdbData, status }) {
+export default memo(function MolViewer({ pdbData, status }) {
   const containerRef = useRef(null);
   const viewerRef = useRef(null);
   const [vizStyle, setVizStyle] = useState('cartoon');
@@ -117,6 +117,7 @@ export default function MolViewer({ pdbData, status }) {
                 key={s.key}
                 className={`mol-viewer__style-btn${vizStyle === s.key ? ' mol-viewer__style-btn--active' : ''}`}
                 title={s.label}
+                aria-label={s.label}
                 onClick={() => {
                   setVizStyle(s.key);
                   applyStyle(s.key);
@@ -131,6 +132,7 @@ export default function MolViewer({ pdbData, status }) {
             <button
               className="mol-viewer__overlay-btn"
               title="Fullscreen"
+              aria-label="Fullscreen"
               onClick={() => containerRef.current?.requestFullscreen?.()}
             >
               <svg
@@ -152,6 +154,7 @@ export default function MolViewer({ pdbData, status }) {
             <button
               className="mol-viewer__overlay-btn"
               title="Reset view"
+              aria-label="Reset view"
               onClick={() => {
                 if (viewerRef.current) {
                   viewerRef.current.zoomTo();
@@ -180,4 +183,4 @@ export default function MolViewer({ pdbData, status }) {
       )}
     </div>
   );
-}
+});
