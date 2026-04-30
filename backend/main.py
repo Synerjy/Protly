@@ -81,7 +81,6 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 
-
 # ---------------------------------------------------------------------------
 # Request logging middleware
 # ---------------------------------------------------------------------------
