@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 4f90b14c2b714a2a63ce06e05a9d26745477f34f
 export default function TopBar({
   onSearch,
   searchQuery,
