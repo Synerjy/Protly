@@ -1,6 +1,4 @@
 import { useState, useCallback, useRef } from 'react';
-import { useAuth } from './components/AuthProvider';
-import LoginPage from './components/LoginPage';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import MolViewer from './components/MolViewer';
@@ -32,16 +30,6 @@ const DEFAULT_FILTERS = {
 let toastId = 0;
 
 export default function App() {
-  const { session, user, loading, signOut } = useAuth();
-
-  // ---- auth helpers ----
-  const authHeaders = useCallback(() => {
-    const headers = { 'Content-Type': 'application/json' };
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`;
-    }
-    return headers;
-  }, [session]);
 
   // ---- view state ----
   const [view, setView] = useState('dashboard'); // 'dashboard' | 'discovery' | 'analysis'
@@ -97,7 +85,7 @@ export default function App() {
       try {
         const res = await fetch(`${API_BASE}/api/predict`, {
           method: 'POST',
-          headers: authHeaders(),
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sequence: seq.trim() }),
         });
 
@@ -118,7 +106,7 @@ export default function App() {
         addToast('error', err.message);
       }
     },
-    [sequence, addToast, authHeaders]
+    [sequence, addToast]
   );
 
   // ---- UniProt search ----
@@ -145,7 +133,7 @@ export default function App() {
         });
 
         const res = await fetch(`${API_BASE}/api/uniprot/search?${params}`, {
-          headers: authHeaders(),
+          headers: { 'Content-Type': 'application/json' },
         });
         if (!res.ok) {
           const errBody = await res.json().catch(() => ({}));
@@ -164,7 +152,7 @@ export default function App() {
         setSearchLoading(false);
       }
     },
-    [filters, addToast, authHeaders]
+    [filters, addToast]
   );
 
   const handleFiltersChange = useCallback((updater) => {
@@ -197,7 +185,7 @@ export default function App() {
 
       try {
         const entryRes = await fetch(`${API_BASE}/api/uniprot/entry/${accession}`, {
-          headers: authHeaders(),
+          headers: { 'Content-Type': 'application/json' },
         });
         if (!entryRes.ok) {
           const errBody = await entryRes.json().catch(() => ({}));
@@ -222,12 +210,12 @@ export default function App() {
         const [predictRes, analyzeRes] = await Promise.all([
           fetch(`${API_BASE}/api/predict`, {
             method: 'POST',
-            headers: authHeaders(),
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sequence: protein.sequence }),
           }),
           fetch(`${API_BASE}/api/analyze`, {
             method: 'POST',
-            headers: authHeaders(),
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sequence: protein.sequence }),
           }),
         ]);
@@ -257,7 +245,7 @@ export default function App() {
         addToast('error', err.message);
       }
     },
-    [addToast, authHeaders]
+    [addToast]
   );
 
   // ---- navigation ----
@@ -285,33 +273,9 @@ export default function App() {
     URL.revokeObjectURL(url);
   }, [pdbData, selectedProtein]);
 
-  // Show loading spinner during auth check
-  if (loading) {
-    return (
-      <div className="login-page" style={{ justifyContent: 'center', alignItems: 'center' }}>
-        <div className="login-page__bg">
-          <div className="login-page__orb login-page__orb--1" />
-          <div className="login-page__orb login-page__orb--2" />
-        </div>
-        <div style={{ textAlign: 'center', zIndex: 2 }}>
-          <div
-            className="spinner spinner--dark"
-            style={{ width: 32, height: 32, margin: '0 auto 16px' }}
-          />
-          <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Loading Protly…</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Redirect to login when not authenticated
-  if (!session) {
-    return <LoginPage />;
-  }
-
   return (
     <div className="app-layout">
-      <Sidebar activeView={view} onViewChange={handleViewChange} user={user} onSignOut={signOut} />
+      <Sidebar activeView={view} onViewChange={handleViewChange} />
 
       <div className="main-wrapper">
         <TopBar
@@ -320,8 +284,6 @@ export default function App() {
           setSearchQuery={setSearchQuery}
           view={view}
           onBackToSearch={handleBackToSearch}
-          user={user}
-          onSignOut={signOut}
         />
 
         {/* ========== DASHBOARD VIEW ========== */}

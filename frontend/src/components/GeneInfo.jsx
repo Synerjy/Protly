@@ -13,14 +13,7 @@ export default function GeneInfo({ status }) {
           </span>
           Gene &amp; Organism
         </div>
-        <div className="card__actions">
-          <button className="card__action-btn" title="Edit">
-            ✎
-          </button>
-          <button className="card__action-btn" title="More">
-            ⋮
-          </button>
-        </div>
+
       </div>
 
       <div className="card__body">

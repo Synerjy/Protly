@@ -2,8 +2,11 @@
 Protly Backend — FastAPI server for ESMFold protein structure prediction.
 
 Endpoints:
-  GET  /api/health   → health check
-  POST /api/predict   → accepts { sequence: str }, returns PDB + pLDDT data
+  GET  /api/health             → health check
+  POST /api/predict            → accepts { sequence: str }, returns PDB + pLDDT data
+  GET  /api/uniprot/search     → proxy UniProt search
+  GET  /api/uniprot/entry/{id} → fetch full UniProt entry
+  POST /api/analyze            → Biopython lab-readiness metrics
 """
 
 import re
@@ -22,7 +25,6 @@ import biotite.structure.io as bsio
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from jose import jwt, JWTError
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -46,15 +48,6 @@ app = FastAPI(title="Protly API", version="1.0.0")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# ---------------------------------------------------------------------------
-# Supabase Auth Config
-# ---------------------------------------------------------------------------
-SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
-SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
-
-if not SUPABASE_JWT_SECRET:
-    logger.warning("SUPABASE_JWT_SECRET is not set — JWT auth verification will be skipped!")
 
 # ---------------------------------------------------------------------------
 # CORS — allow the Vite dev server and common local origins
@@ -68,7 +61,7 @@ app.add_middleware(
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Requested-With"],
+    allow_headers=["Content-Type", "X-Requested-With"],
 )
 
 
@@ -87,55 +80,6 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response
 
-
-# ---------------------------------------------------------------------------
-# JWT Authentication middleware
-# ---------------------------------------------------------------------------
-# Endpoints that do NOT require authentication
-PUBLIC_PATHS = {"/api/health", "/docs", "/openapi.json", "/redoc"}
-
-
-@app.middleware("http")
-async def authenticate_requests(request: Request, call_next):
-    """Validate Supabase JWT on protected endpoints."""
-    path = request.url.path
-
-    # Skip auth for public endpoints and CORS preflight
-    if path in PUBLIC_PATHS or request.method == "OPTIONS":
-        return await call_next(request)
-
-    # If no JWT secret configured, skip validation (dev mode)
-    if not SUPABASE_JWT_SECRET:
-        return await call_next(request)
-
-    # Extract Bearer token
-    auth_header = request.headers.get("Authorization", "")
-    if not auth_header.startswith("Bearer "):
-        return JSONResponse(
-            status_code=401,
-            content={"detail": "Missing or invalid Authorization header. Please sign in."},
-        )
-
-    token = auth_header.split(" ", 1)[1]
-
-    try:
-        payload = jwt.decode(
-            token,
-            SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
-            audience="authenticated",
-        )
-        # Attach user info to request state for downstream handlers
-        request.state.user_id = payload.get("sub")
-        request.state.user_email = payload.get("email", "")
-    except JWTError as exc:
-        logger.warning("JWT verification failed: %s", exc)
-        return JSONResponse(
-            status_code=401,
-            content={"detail": "Invalid or expired token. Please sign in again."},
-        )
-
-    return await call_next(request)
 
 
 # ---------------------------------------------------------------------------
