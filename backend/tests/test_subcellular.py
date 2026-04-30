@@ -9,9 +9,6 @@ from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 import main
 
-# Bypass JWT auth for testing
-main.SUPABASE_JWT_SECRET = ""
-
 client = TestClient(main.app)
 
 

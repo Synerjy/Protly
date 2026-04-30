@@ -87,4 +87,4 @@ describe('SequenceInput Component', () => {
 ### Best Practices
 
 - **Query by Accessibility**: Prefer `getByRole`, `getByLabelText`, and `getByText`. Avoid querying by CSS classes, as tests should test functionality, not DOM structure.
-- **Mock External Hooks**: If your component relies on global states (like `useAuth`), mock the hook using `vi.spyOn(AuthProvider, 'useAuth')` so you can test the component in isolation.
+- **Mock External Hooks**: If your component relies on global state or context hooks, mock the hook using `vi.spyOn` so you can test the component in isolation.

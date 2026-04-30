@@ -27,23 +27,21 @@ The frontend is a Single Page Application (SPA) built with React and bundled usi
 - **Styling**: Vanilla CSS (`index.css`) emphasizing a dark-mode, premium UI with smooth transitions and glassmorphism elements.
 - **Routing/State**: Managed primarily via React local state (`useState`, `useCallback`) within a primary layout orchestrator (`App.jsx`).
 - **Key Libraries**:
-  - `@supabase/supabase-js`: Handles user authentication and session management.
   - `3dmol`: Used in `MolViewer.jsx` to render interactive 3D models of protein structures based on PDB data.
   - `chart.js` / `react-chartjs-2`: Powers the graphical rendering of pLDDT metrics (per-residue confidence lines/bars).
   - `recharts`: Alternate charting library for other analytical visualizations.
 - **Testing**: Setup with `vitest` and `@testing-library/react`.
 
 ### 2.2 Backend (FastAPI / Python)
-The backend is a high-performance RESTful API that handles analytical computations, rate-limiting, authentication checks, and proxies external biological APIs.
+The backend is a high-performance RESTful API that handles analytical computations, rate-limiting, and proxies external biological APIs.
 - **Core Framework**: FastAPI, served via Uvicorn.
-- **Authentication**: Validates Supabase JWTs attached to requests to protect endpoints.
 - **Rate Limiting**: Implemented using `slowapi` to prevent abuse (e.g., 10 predictions/min, 30 UniProt searches/min).
 - **Key Python Libraries**:
   - `biotite`: Parses the PDB structures returned from ESMFold to reliably extract `b_factor` data, which maps to the pLDDT confidence scores.
   - `biopython`: Powers the `/api/analyze` endpoint. Uses `Bio.SeqUtils.ProtParam.ProteinAnalysis` to calculate biochemical metrics.
   - `requests` / `httpx`: Handles secure outbound HTTP calls to UniProt and ESMAtlas APIs.
   - `numpy`: Fast mathematical aggregation and distribution calculations of pLDDT scores.
-  - `python-jose`: Secured JWT decoding for Supabase authentication.
+
 
 ### 2.3 Auxiliary Components
 - **ESMFold Streamlit App (`esmfold-master` directory)**: Contains an alternative, standalone `streamlit_app.py` for interacting with ESMFold structure predictions natively in Python, acting potentially as a prototype or a specialized tool alongside the main stack.
@@ -52,13 +50,7 @@ The backend is a high-performance RESTful API that handles analytical computatio
 
 ## 3. Core Functionality & Implementation
 
-### 3.1 Authentication Flow
-- **Implementation**: The `AuthProvider.jsx` context wrapper initializes a Supabase client. Users must log in via `LoginPage.jsx`.
-- Upon successful login, Supabase provides a JWT.
-- The `App.jsx` constructs an `Authorization: Bearer <token>` header for all outward requests to the FastAPI backend.
-- The backend's `authenticate_requests` middleware decodes this token using `SUPABASE_JWT_SECRET`. If invalid or missing, it blocks the request (`401 Unauthorized`).
-
-### 3.2 Feature: Protein Structure Prediction
+### 3.1 Feature: Protein Structure Prediction
 - **Frontend Flow**: User enters an amino acid sequence in `SequenceInput.jsx`. `App.jsx` issues a POST to `/api/predict`. 
 - **Backend Flow**:
   1. Sequence is validated by Pydantic (`PredictRequest`) against valid 20 standard amino acid characters. Length is constrained (10 to 2000 AAs).
@@ -73,12 +65,12 @@ The backend is a high-performance RESTful API that handles analytical computatio
      - **Very Low**: < 50
 - **Visualization**: Data returns to the frontend. `MolViewer.jsx` uses `3dmol` to spin up an interactive 3D WebGL viewer of the PDB output. `ConfidenceBar.jsx` and `PldtMetrics.jsx` visualize the confidence metrics using Chart.js.
 
-### 3.3 Feature: UniProt Discovery & Search
+### 3.2 Feature: UniProt Discovery & Search
 - **Frontend Flow**: Switching the view to '*Discovery*' opens the `SearchPanel.jsx` and `DiscoveryTable.jsx`.
 - **Filters**: Users can toggle 'Reviewed' (Swiss-Prot), Organism specificity, and Max Sequence Length.
 - **Backend Flow (`/api/uniprot/search`)**: Proxy endpoint converts UI filters into a complex Solr query string (e.g., `(reviewed:true) AND (organism_id:9606) AND (length:[1 TO 1000])`). Fetches paginated JSON results from UniProt REST API, standardizing fields (Gene Name, Accession, Organism) for the frontend discovery table.
 
-### 3.4 Feature: Lab Readiness Analysis
+### 3.3 Feature: Lab Readiness Analysis
 - When a user selects a protein from the Discovery Table, the view shifts to '*Analysis*'.
 - **Frontend Flow**: Triggers concurrent requests to `/api/predict` (for structure) and `/api/analyze` (for properties).
 - **Backend Flow (`/api/analyze`)**: 

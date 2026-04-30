@@ -5,9 +5,7 @@ biotite
 numpy
 slowapi
 biopython
-python-jose[cryptography]
 python-dotenv
-supabase
 pytest
 pytest-asyncio
 httpx
