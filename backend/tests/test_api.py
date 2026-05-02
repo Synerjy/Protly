@@ -2,9 +2,6 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch
 import main
 
-# Force bypass of JWT auth for testing by removing the secret
-main.SUPABASE_JWT_SECRET = ""
-
 client = TestClient(main.app)
 
 

@@ -26,14 +26,7 @@ export default function ActionsCard({ pdbData, onDownload, status, sequence }) {
           </span>
           Export &amp; Actions
         </div>
-        <div className="card__actions">
-          <button className="card__action-btn" title="Help">
-            ?
-          </button>
-          <button className="card__action-btn" title="More">
-            ⋮
-          </button>
-        </div>
+
       </div>
 
       <div className="card__body">

@@ -14,7 +14,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.99.3",
     "3dmol": "^2.5.4",
     "chart.js": "^4.5.1",
     "react": "^19.2.0",

@@ -63,9 +63,6 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch
 import main
 
-# If testing public functionality and avoiding middleware token checks:
-main.SUPABASE_JWT_SECRET = "" 
-
 client = TestClient(main.app)
 
 @patch("main.requests.post")
